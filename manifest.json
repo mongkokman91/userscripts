@@ -1,18 +1,146 @@
 [
-  {"name":"AI Studio Bulk Chat Turn & Library Item Selector/Deleter with Token-Size Badges, Largest-Turn Finder, and \"Delete Before\" Tool","version":"0.7.0","path":"scripts/AI Studio Bulk Chat Turn & Library Item Selector-Deleter with Token-Size Badges, Largest-Turn Finder, and -Delete Before- Tool.user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Advanced Link Extractor (Dark Mode + Mobile) - YouTube Compatible","version":"14.0","path":"scripts/Advanced Link Extractor (Dark Mode + Mobile) - YouTube Compatible.user.js","namespace":"advanced-link-extractor","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Claude Universal MD Exporter","version":"9.0","path":"scripts/Claude Universal MD Exporter.user.js","namespace":"claude-universal-exporter","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Feedly YT Extractor Persistent (Bottom-Right)","version":"1.5","path":"scripts/Feedly YT Extractor Persistent (Bottom-Right).user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Google AI Studio - Ultimate Auto-Config (v7.7)","version":"7.7","path":"scripts/Google AI Studio - Ultimate Auto-Config (v7.7).user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Google AI Studio Rapid Fixed Batch Keep Last 100","version":"7.1","path":"scripts/Google AI Studio Rapid Fixed Batch Keep Last 100.user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Google Search Link Grabber (Fixed v4)","version":"4.0","path":"scripts/Google Search Link Grabber (Fixed v4).user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Hadzy Auto-Expand Replies","version":"1.0","path":"scripts/Hadzy Auto-Expand Replies.user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"PC Optimum Auto-Select All Offers","version":"1.0","path":"scripts/PC Optimum Auto-Select All Offers.user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"RFD Auto Thread Extractor (v4.8 - Multi-Thread Picker)","version":"4.8","path":"scripts/RFD Auto Thread Extractor (v4.8 - Multi-Thread Picker).user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"RFD Universal Link Extractor (Bottom-Right)","version":"1.4","path":"scripts/RFD Universal Link Extractor (Bottom-Right).user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Reddit Show Only 10 Posts","version":"1.0.0","path":"scripts/Reddit Show Only 10 Posts.user.js","namespace":"","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Reddit URL Extractor (Bottom-Right)","version":"1.0.0","path":"scripts/Reddit URL Extractor (Bottom-Right).user.js","namespace":"","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"Target Circle Auto Coupon Clipper","version":"2.3","path":"scripts/Target Circle Auto Coupon Clipper.user.js","namespace":"https://greasyfork.org/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"UberReceipts","version":"4.1","path":"scripts/UberReceipts.user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"},
-  {"name":"YouTube Link Extractor - VIDEOS ONLY","version":"3.2","path":"scripts/YouTube Link Extractor - VIDEOS ONLY.user.js","namespace":"http://tampermonkey.net/","status":"active","authority":"mongkokman91/userscripts"}
+  {
+    "name": "AI Studio Bulk Chat Turn & Library Item Selector/Deleter with Token-Size Badges, Largest-Turn Finder, and \"Delete Before\" Tool",
+    "version": "0.7.0",
+    "path": "scripts/AI Studio Bulk Chat Turn & Library Item Selector-Deleter with Token-Size Badges, Largest-Turn Finder, and -Delete Before- Tool.user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Advanced Link Extractor (Dark Mode + Mobile) - YouTube Compatible",
+    "version": "14.0",
+    "path": "scripts/Advanced Link Extractor (Dark Mode + Mobile) - YouTube Compatible.user.js",
+    "namespace": "advanced-link-extractor",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Claude Universal MD Exporter",
+    "version": "9.0",
+    "path": "scripts/Claude Universal MD Exporter.user.js",
+    "namespace": "claude-universal-exporter",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Feedly YT Extractor Persistent (Bottom-Right)",
+    "version": "1.5",
+    "path": "scripts/Feedly YT Extractor Persistent (Bottom-Right).user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Google AI Studio - Ultimate Auto-Config (v7.7)",
+    "version": "7.7",
+    "path": "scripts/Google AI Studio - Ultimate Auto-Config (v7.7).user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Google AI Studio Rapid Fixed Batch Keep Last 100",
+    "version": "7.1",
+    "path": "scripts/Google AI Studio Rapid Fixed Batch Keep Last 100.user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Google Search Link Grabber (Fixed v4)",
+    "version": "4.0",
+    "path": "scripts/Google Search Link Grabber (Fixed v4).user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Hadzy Auto-Expand Replies",
+    "version": "1.0",
+    "path": "scripts/Hadzy Auto-Expand Replies.user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "PC Optimum Auto-Select All Offers",
+    "version": "1.0",
+    "path": "scripts/PC Optimum Auto-Select All Offers.user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "RFD Auto Thread Extractor (v4.8 - Multi-Thread Picker)",
+    "version": "4.8",
+    "path": "scripts/RFD Auto Thread Extractor (v4.8 - Multi-Thread Picker).user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "RFD Universal Link Extractor (Bottom-Right)",
+    "version": "1.4",
+    "path": "scripts/RFD Universal Link Extractor (Bottom-Right).user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Reddit Show Only 10 Posts",
+    "version": "1.0.0",
+    "path": "scripts/Reddit Show Only 10 Posts.user.js",
+    "namespace": "",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Reddit URL Extractor (Bottom-Right)",
+    "version": "1.0.0",
+    "path": "scripts/Reddit URL Extractor (Bottom-Right).user.js",
+    "namespace": "",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "Target Circle Auto Coupon Clipper",
+    "version": "2.3",
+    "path": "scripts/Target Circle Auto Coupon Clipper.user.js",
+    "namespace": "https://greasyfork.org/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "UberReceipts",
+    "version": "4.1",
+    "path": "scripts/UberReceipts.user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  },
+  {
+    "name": "YouTube Link Extractor - VIDEOS ONLY",
+    "version": "3.2",
+    "path": "scripts/YouTube Link Extractor - VIDEOS ONLY.user.js",
+    "namespace": "http://tampermonkey.net/",
+    "status": "active",
+    "authority": "mongkokman91/userscripts",
+    "update_policy": "github-auto-update"
+  }
 ]

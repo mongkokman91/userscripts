@@ -2,11 +2,11 @@
 // @name         Hadzy Auto-Expand Replies
 // @namespace    http://tampermonkey.net/
 // @version      1.0
-// @match        https://next.hadzy.com/*
-// @grant        none
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Hadzy%20Auto-Expand%20Replies.user.js
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Hadzy%20Auto-Expand%20Replies.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Hadzy%20Auto-Expand%20Replies.user.js
+// @match        https://next.hadzy.com/*
+// @grant        none
 // ==/UserScript==
 (function() {
     'use strict';

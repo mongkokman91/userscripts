@@ -2,12 +2,12 @@
 // @name         Feedly YT Extractor Persistent (Bottom-Right)
 // @namespace    http://tampermonkey.net/
 // @version      1.5
-// @match        *://feedly.com/*
-// @grant        GM_setClipboard
-// @run-at       document-idle
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Feedly%20YT%20Extractor%20Persistent%20%28Bottom-Right%29.user.js
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Feedly%20YT%20Extractor%20Persistent%20%28Bottom-Right%29.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Feedly%20YT%20Extractor%20Persistent%20%28Bottom-Right%29.user.js
+// @match        *://feedly.com/*
+// @grant        GM_setClipboard
+// @run-at       document-idle
 // ==/UserScript==
 
 (function() {

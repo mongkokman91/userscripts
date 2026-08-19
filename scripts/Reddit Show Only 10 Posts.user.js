@@ -1,12 +1,12 @@
 // ==UserScript==
 // @name         Reddit Show Only 10 Posts
-// @match        https://www.reddit.com/r/*
-// @match        https://www.reddit.com/r/*/*
-// @run-at       document-idle
 // @version      1.0.0
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Reddit%20Show%20Only%2010%20Posts.user.js
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Reddit%20Show%20Only%2010%20Posts.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Reddit%20Show%20Only%2010%20Posts.user.js
+// @match        https://www.reddit.com/r/*
+// @match        https://www.reddit.com/r/*/*
+// @run-at       document-idle
 // ==/UserScript==
 
 (function () {
