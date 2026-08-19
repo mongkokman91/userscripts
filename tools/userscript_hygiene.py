@@ -30,10 +30,16 @@ def version_key(v):
 
 
 def bump_patch(v):
-    nums = re.findall(r'\d+', v or '')
+    nums = [int(x) for x in re.findall(r'\d+', v or '')]
     if not nums:
         return '1.0.0'
-    return '.'.join(nums + ['1'])
+    if len(nums) == 1:
+        nums += [0, 1]
+    elif len(nums) == 2:
+        nums += [1]
+    else:
+        nums[-1] += 1
+    return '.'.join(str(x) for x in nums)
 
 
 def git_show(ref, path):
