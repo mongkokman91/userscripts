@@ -32,13 +32,11 @@ jobs:
       - name: Validate pull request
         if: github.event_name == 'pull_request'
         shell: bash
+        env:
+          BASE_BRANCH: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          if [ -d .sync ]; then
-            echo 'One-time migration payload is staged; strict inventory validation begins after materialization.'
-          else
-            python3 tools/userscript_hygiene.py --check
-          fi
+          python3 tools/userscript_hygiene.py --base "origin/$BASE_BRANCH" --check
       - name: Commit hygiene fixes
         if: github.event_name == 'push'
         shell: bash
