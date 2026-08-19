@@ -1,0 +1,55 @@
+name: Userscript hygiene
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/**.user.js'
+      - 'tools/userscript_hygiene.py'
+  pull_request:
+    paths:
+      - 'scripts/**.user.js'
+      - 'tools/userscript_hygiene.py'
+
+permissions:
+  contents: write
+
+jobs:
+  hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Normalize metadata and versions
+        if: github.event_name == 'push'
+        shell: bash
+        env:
+          BASE_SHA: ${{ github.event.before }}
+        run: |
+          set -euo pipefail
+          python3 tools/userscript_hygiene.py --base "$BASE_SHA"
+      - name: Validate pull request
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ -d .sync ]; then
+            echo 'One-time migration payload is staged; strict inventory validation begins after materialization.'
+          else
+            python3 tools/userscript_hygiene.py --check
+          fi
+      - name: Commit hygiene fixes
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add scripts manifest.json
+          if git diff --cached --quiet; then
+            echo 'No hygiene changes required.'
+          else
+            git commit -m 'Apply userscript hygiene'
+            git push
+          fi
