@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
-// @version      3.4.0
+// @version      3.4.1
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
@@ -30,14 +30,14 @@
   let stopped = false, running = false, saved = 0, loads = 0;
   const attempted = new WeakSet();
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const say = message => { status.textContent = 'TC Clipper v3.4.0: ' + message; };
+  const say = message => { status.textContent = 'TC Clipper v3.4.1: ' + message; };
   const labels = el => [el.innerText || el.textContent || el.value || '', el.getAttribute('aria-label') || '', el.title || '']
     .map(s => s.replace(/\s+/g, ' ').trim());
   const matches = (el, re) => labels(el).some(s => re.test(s));
   const visible = el => el.isConnected && !el.hidden && el.getClientRects().length > 0 &&
     getComputedStyle(el).visibility !== 'hidden';
   const enabled = el => !el.disabled && el.getAttribute('aria-disabled') !== 'true';
-  const controls = () => [...document.querySelectorAll('main button, main [role="button"], main a, main input[type="button"]')]
+  const controls = () => [...document.querySelectorAll('button, [role="button"], a, input[type="button"]')]
     .filter(el => !panel.contains(el) && visible(el));
   const applyRE = /^apply(?:\s+(?:offer|coupon|deal))?$/i;
   const moreRE = /^load more(?:\s+(?:offers|coupons|deals))?$/i;
