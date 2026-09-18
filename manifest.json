@@ -118,9 +118,9 @@
   },
   {
     "name": "Target Circle Auto Coupon Clipper",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "path": "scripts/Target Circle Auto Coupon Clipper.user.js",
-    "namespace": "https://github.com/mongkokman91/userscripts",
+    "namespace": "https://greasyfork.org/",
     "status": "active",
     "authority": "mongkokman91/userscripts",
     "update_policy": "github-auto-update"
