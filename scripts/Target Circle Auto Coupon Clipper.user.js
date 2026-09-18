@@ -2,12 +2,12 @@
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
 // @version      3.2.0
-// @description  Automatically saves visible Target Circle offers, including lazy-loaded offers.
-// @author       You
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @supportURL   https://github.com/mongkokman91/userscripts/issues
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @description  Automatically saves visible Target Circle offers, including lazy-loaded offers.
+// @author       You
+// @supportURL   https://github.com/mongkokman91/userscripts/issues
 // @match        https://www.target.com/*
 // @run-at       document-idle
 // @inject-into  content
