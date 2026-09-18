@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
-// @version      3.0.1
-// @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @version      3.1.0
 // @description  Automatically saves visible Target Circle offers, including lazy-loaded offers.
 // @author       You
+// @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @supportURL   https://github.com/mongkokman91/userscripts/issues
+// @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @match        https://www.target.com/*
 // @run-at       document-idle
 // @inject-into  content
@@ -30,7 +30,7 @@
     maxClickAttempts: 500,
   });
 
-  const actionableText = /^(?:apply|save offer|clip|add offer)\b/i;
+  const actionableText = /^(?:apply|save|clip|activate|add)(?:\s+(?:offer|deal|coupon))?\b/i;
   const completedText = /\b(?:applied|already saved|saved)\b/i;
   const attempted = new WeakSet();
   const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
@@ -110,6 +110,23 @@
     return (element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim();
   }
 
+  function elementLabel(element) {
+    return [
+      element.getAttribute('aria-label'),
+      element.getAttribute('title'),
+      elementText(element),
+    ].filter(Boolean).join(' ').trim();
+  }
+
+  function hasOfferContext(element) {
+    let container = element;
+    for (let depth = 0; container && depth < 7; depth += 1, container = container.parentElement) {
+      const context = elementText(container).slice(0, 1500);
+      if (/target circle|circle offer|offer details|deal details|expires?|coupon/i.test(context)) return true;
+    }
+    return false;
+  }
+
   function isVisible(element) {
     if (!element.isConnected || element.hidden) return false;
     const style = window.getComputedStyle(element);
@@ -118,10 +135,15 @@
   }
 
   function findButtons() {
-    return [...document.querySelectorAll('button, [role="button"]')].filter((element) => {
+    return [...document.querySelectorAll('button, [role="button"], input[type="button"]')].filter((element) => {
       if (attempted.has(element) || element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
-      const text = elementText(element);
-      return isVisible(element) && actionableText.test(text) && !completedText.test(text);
+      const label = elementLabel(element);
+      if (!isVisible(element) || !actionableText.test(label) || completedText.test(label)) return false;
+
+      // Target uses a bare “Add” label in some Circle cards. Never treat a
+      // normal product/cart Add button as a coupon unless its card says it is
+      // a Circle offer.
+      return !/^add\s*$/i.test(label) || hasOfferContext(element);
     });
   }
 
@@ -147,13 +169,14 @@
     for (let round = 0; round < CONFIG.maxScanRounds && stableRounds < CONFIG.stableRoundsToStop; round += 1) {
       if (stopped) return;
       await waitWhilePaused();
-      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' });
+      window.scrollBy({ top: Math.max(window.innerHeight * 0.85, 600), behavior: 'auto' });
       await sleep(CONFIG.scanDelayMs);
 
       const currentHeight = document.documentElement.scrollHeight;
-      stableRounds = currentHeight === previousHeight ? stableRounds + 1 : 0;
+      const atBottom = window.scrollY + window.innerHeight >= currentHeight - 20;
+      stableRounds = atBottom && currentHeight === previousHeight ? stableRounds + 1 : 0;
       previousHeight = currentHeight;
-      setStatus(`Scanning offers… ${clipped} saved`);
+      setStatus(`Scanning offers… ${clipped} saved, ${findButtons().length} ready`);
     }
   }
 
