@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
-// @version      3.1.0
-// @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @version      3.2.0
 // @description  Automatically saves visible Target Circle offers, including lazy-loaded offers.
 // @author       You
+// @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @supportURL   https://github.com/mongkokman91/userscripts/issues
+// @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @match        https://www.target.com/*
 // @run-at       document-idle
 // @inject-into  content
@@ -25,8 +25,8 @@
     clickDelayMs: 900,
     settleDelayMs: 700,
     scanDelayMs: 900,
-    maxScanRounds: 50,
-    stableRoundsToStop: 3,
+    maxScanRounds: 120,
+    stableRoundsToStop: 4,
     maxClickAttempts: 500,
   });
 
@@ -135,7 +135,7 @@
   }
 
   function findButtons() {
-    return [...document.querySelectorAll('button, [role="button"], input[type="button"]')].filter((element) => {
+    return [...document.querySelectorAll('button, [role="button"], input[type="button"], a')].filter((element) => {
       if (attempted.has(element) || element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
       const label = elementLabel(element);
       if (!isVisible(element) || !actionableText.test(label) || completedText.test(label)) return false;
@@ -162,22 +162,69 @@
     else failed += 1;
   }
 
-  async function revealLazyContent() {
-    let stableRounds = 0;
+  function scrollPosition() {
+    const root = document.scrollingElement || document.documentElement;
+    return {
+      root,
+      top: root.scrollTop,
+      height: Math.max(root.scrollHeight, document.body ? document.body.scrollHeight : 0),
+      viewport: root.clientHeight || window.innerHeight,
+    };
+  }
+
+  function forceScrollTo(top) {
+    const root = document.scrollingElement || document.documentElement;
+    root.scrollTop = top;
+    window.scrollTo(0, top);
+  }
+
+  async function clipCurrentBatch() {
+    const buttons = findButtons();
+    for (const button of buttons) {
+      if (stopped || clipped + failed >= CONFIG.maxClickAttempts) break;
+      await waitWhilePaused();
+      setStatus(`Applying offer ${clipped + failed + 1}…`);
+      await clickAndConfirm(button);
+    }
+    return buttons.length;
+  }
+
+  async function crawlOffers() {
+    forceScrollTo(0);
+    await sleep(CONFIG.scanDelayMs);
+
+    let stableBottomRounds = 0;
     let previousHeight = 0;
 
-    for (let round = 0; round < CONFIG.maxScanRounds && stableRounds < CONFIG.stableRoundsToStop; round += 1) {
-      if (stopped) return;
+    for (let round = 0; round < CONFIG.maxScanRounds; round += 1) {
+      if (stopped || clipped + failed >= CONFIG.maxClickAttempts) return;
       await waitWhilePaused();
-      window.scrollBy({ top: Math.max(window.innerHeight * 0.85, 600), behavior: 'auto' });
+
+      await clipCurrentBatch();
+
+      const before = scrollPosition();
+      const nextTop = Math.min(
+        before.top + Math.max(Math.floor(before.viewport * 0.8), 600),
+        Math.max(before.height - before.viewport, 0),
+      );
+      forceScrollTo(nextTop);
       await sleep(CONFIG.scanDelayMs);
 
-      const currentHeight = document.documentElement.scrollHeight;
-      const atBottom = window.scrollY + window.innerHeight >= currentHeight - 20;
-      stableRounds = atBottom && currentHeight === previousHeight ? stableRounds + 1 : 0;
-      previousHeight = currentHeight;
-      setStatus(`Scanning offers… ${clipped} saved, ${findButtons().length} ready`);
+      const after = scrollPosition();
+      const atBottom = after.top + after.viewport >= after.height - 30;
+      const heightStable = after.height === previousHeight;
+      stableBottomRounds = atBottom && heightStable ? stableBottomRounds + 1 : 0;
+      previousHeight = after.height;
+
+      setStatus(`Scanning page ${round + 1}… ${clipped} saved, ${findButtons().length} ready`);
+      if (stableBottomRounds >= CONFIG.stableRoundsToStop) break;
     }
+
+    // A second top-to-bottom pass catches virtualized cards that Target may
+    // have removed from the DOM during the first pass.
+    forceScrollTo(0);
+    await sleep(CONFIG.scanDelayMs);
+    await clipCurrentBatch();
   }
 
   async function run() {
@@ -188,24 +235,7 @@
       setStatus('Waiting for offers…');
       await sleep(CONFIG.settleDelayMs);
 
-      for (let pass = 1; pass <= CONFIG.maxScanRounds && clipped + failed < CONFIG.maxClickAttempts; pass += 1) {
-        if (stopped) return;
-        await waitWhilePaused();
-
-        const buttons = findButtons();
-        if (!buttons.length) {
-          await revealLazyContent();
-          if (!findButtons().length) break;
-          continue;
-        }
-
-        for (const button of buttons) {
-          if (stopped || clipped + failed >= CONFIG.maxClickAttempts) break;
-          await waitWhilePaused();
-          setStatus(`Saving offer ${clipped + failed + 1}…`);
-          await clickAndConfirm(button);
-        }
-      }
+      await crawlOffers();
 
       window.scrollTo({ left: originalX, top: originalY, behavior: 'auto' });
       setStatus(`Done — ${clipped} saved${failed ? `, ${failed} unconfirmed` : ''}`);
