@@ -1,13 +1,13 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
-// @version      3.2.0
-// @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @version      3.3.0
 // @description  Automatically saves visible Target Circle offers, including lazy-loaded offers.
 // @author       You
+// @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @supportURL   https://github.com/mongkokman91/userscripts/issues
+// @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @match        https://www.target.com/*
 // @run-at       document-idle
 // @inject-into  content
@@ -162,20 +162,48 @@
     else failed += 1;
   }
 
-  function scrollPosition() {
-    const root = document.scrollingElement || document.documentElement;
+  function scrollPosition(root) {
     return {
       root,
       top: root.scrollTop,
-      height: Math.max(root.scrollHeight, document.body ? document.body.scrollHeight : 0),
+      height: root.scrollHeight,
       viewport: root.clientHeight || window.innerHeight,
     };
   }
 
-  function forceScrollTo(top) {
-    const root = document.scrollingElement || document.documentElement;
+  function forceScrollTo(root, top) {
     root.scrollTop = top;
-    window.scrollTo(0, top);
+    if (root === document.scrollingElement || root === document.documentElement || root === document.body) {
+      window.scrollTo(0, top);
+    }
+    root.dispatchEvent(new Event('scroll', { bubbles: true }));
+  }
+
+  function findScrollRoots() {
+    const documentRoot = document.scrollingElement || document.documentElement;
+    const nested = [...document.querySelectorAll('main, section, div, ul')].filter((element) => {
+      const style = window.getComputedStyle(element);
+      return element.scrollHeight > element.clientHeight + 100 &&
+        element.clientHeight > 250 &&
+        /auto|scroll/.test(style.overflowY);
+    });
+    return [...new Set([documentRoot, ...nested])]
+      .sort((a, b) => b.scrollHeight - a.scrollHeight)
+      .slice(0, 8);
+  }
+
+  async function clickLoadMore() {
+    const controls = [...document.querySelectorAll('button, [role="button"], a')].filter((element) => {
+      const label = elementLabel(element);
+      return isVisible(element) && /^(?:show|load|view)\s+more(?:\s+(?:offers|deals|coupons))?\b/i.test(label);
+    });
+    for (const control of controls) {
+      control.scrollIntoView({ block: 'center' });
+      await sleep(150);
+      control.click();
+      await sleep(CONFIG.scanDelayMs);
+    }
+    return controls.length;
   }
 
   async function clipCurrentBatch() {
@@ -189,10 +217,9 @@
     return buttons.length;
   }
 
-  async function crawlOffers() {
-    forceScrollTo(0);
+  async function crawlRoot(root, rootNumber, rootCount) {
+    forceScrollTo(root, 0);
     await sleep(CONFIG.scanDelayMs);
-
     let stableBottomRounds = 0;
     let previousHeight = 0;
 
@@ -201,28 +228,42 @@
       await waitWhilePaused();
 
       await clipCurrentBatch();
+      await clickLoadMore();
 
-      const before = scrollPosition();
+      const before = scrollPosition(root);
       const nextTop = Math.min(
         before.top + Math.max(Math.floor(before.viewport * 0.8), 600),
         Math.max(before.height - before.viewport, 0),
       );
-      forceScrollTo(nextTop);
+      forceScrollTo(root, nextTop);
       await sleep(CONFIG.scanDelayMs);
 
-      const after = scrollPosition();
+      const after = scrollPosition(root);
       const atBottom = after.top + after.viewport >= after.height - 30;
       const heightStable = after.height === previousHeight;
       stableBottomRounds = atBottom && heightStable ? stableBottomRounds + 1 : 0;
       previousHeight = after.height;
 
-      setStatus(`Scanning page ${round + 1}… ${clipped} saved, ${findButtons().length} ready`);
+      setStatus(`Scroller ${rootNumber}/${rootCount}, pass ${round + 1}… ${clipped} saved`);
       if (stableBottomRounds >= CONFIG.stableRoundsToStop) break;
+    }
+
+    forceScrollTo(root, 0);
+  }
+
+  async function crawlOffers() {
+    // Target has alternated between document scrolling and nested results
+    // panes. Drive every substantial vertical scroller rather than assuming.
+    const roots = findScrollRoots();
+    for (let index = 0; index < roots.length; index += 1) {
+      if (stopped || clipped + failed >= CONFIG.maxClickAttempts) break;
+      await crawlRoot(roots[index], index + 1, roots.length);
     }
 
     // A second top-to-bottom pass catches virtualized cards that Target may
     // have removed from the DOM during the first pass.
-    forceScrollTo(0);
+    const root = document.scrollingElement || document.documentElement;
+    forceScrollTo(root, 0);
     await sleep(CONFIG.scanDelayMs);
     await clipCurrentBatch();
   }
