@@ -1,177 +1,202 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
-// @namespace    https://greasyfork.org/
-// @version      2.3
+// @namespace    https://github.com/mongkokman91/userscripts
+// @version      3.0.0
+// @description  Automatically saves visible Target Circle offers, including lazy-loaded offers.
+// @author       You
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
+// @supportURL   https://github.com/mongkokman91/userscripts/issues
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
-// @description  Automatically clicks all coupon buttons on Target Circle pages
-// @author       You
 // @match        https://www.target.com/*
 // @run-at       document-idle
 // @inject-into  content
 // @grant        none
+// @noframes
 // ==/UserScript==
+
 (function () {
   'use strict';
-  const DELAY_MS = 800;
-  const SCROLL_DELAY_MS = 1200;
-  const MAX_SCROLLS = 80;
 
-  function findButtons() {
-    return [...document.querySelectorAll('button, [role="button"], a')].filter(function (el) {
-      if (el.disabled) return false;
-      var t = (el.innerText || el.textContent || '').trim();
-      return (
-        /^Apply\b/i.test(t) ||
-        /^Save offer/i.test(t) ||
-        /^Clip\b/i.test(t) ||
-        /^Add offer/i.test(t)
-      ) && !/applied in cart/i.test(t)
-        && !/already saved/i.test(t)
-        && !/applied/i.test(t);
-    });
-  }
+  if (window.top !== window.self || window.__targetCircleClipperRunning) return;
+  window.__targetCircleClipperRunning = true;
 
-  // Also scroll all horizontally scrollable containers
-  async function scrollAllCarousels() {
-    const scrollables = [...document.querySelectorAll('*')].filter(el => {
-      const s = window.getComputedStyle(el);
-      return (
-        el.scrollWidth > el.clientWidth + 10 &&
-        (s.overflowX === 'auto' || s.overflowX === 'scroll')
-      );
-    });
-    for (const el of scrollables) {
-      let lastW = 0;
-      for (let i = 0; i < 30; i++) {
-        el.scrollLeft += 400;
-        await sleep(300);
-        if (el.scrollLeft === lastW) break;
-        lastW = el.scrollLeft;
-      }
-      el.scrollLeft = 0;
-    }
-  }
+  const CONFIG = Object.freeze({
+    clickDelayMs: 900,
+    settleDelayMs: 700,
+    scanDelayMs: 900,
+    maxScanRounds: 50,
+    stableRoundsToStop: 3,
+    maxClickAttempts: 500,
+  });
 
-  var overlay = document.createElement('div');
-  overlay.style.cssText = [
+  const actionableText = /^(?:apply|save offer|clip|add offer)\b/i;
+  const completedText = /\b(?:applied|already saved|saved)\b/i;
+  const attempted = new WeakSet();
+  const sleep = (ms) => new Promise((resolve) => window.setTimeout(resolve, ms));
+
+  let stopped = false;
+  let paused = false;
+  let clipped = 0;
+  let failed = 0;
+
+  const panel = document.createElement('aside');
+  panel.setAttribute('aria-live', 'polite');
+  panel.style.cssText = [
     'position:fixed',
-    'bottom:24px',
     'right:24px',
-    'z-index:999999',
+    'bottom:24px',
+    'z-index:2147483647',
+    'min-width:250px',
+    'max-width:340px',
+    'padding:12px 14px',
+    'border-radius:10px',
     'background:#cc0000',
     'color:#fff',
-    'font-family:sans-serif',
-    'font-size:14px',
-    'font-weight:600',
-    'padding:12px 18px',
-    'border-radius:10px',
-    'box-shadow:0 4px 16px rgba(0,0,0,0.25)',
-    'min-width:230px',
-    'line-height:1.6'
+    'box-shadow:0 4px 16px rgba(0,0,0,.28)',
+    'font:600 14px/1.45 system-ui,-apple-system,Segoe UI,sans-serif',
   ].join(';');
-  overlay.innerHTML = '&#127919; TC Clipper: <b>Starting...</b>';
-  document.body.appendChild(overlay);
 
-  function setStatus(msg) {
-    overlay.innerHTML = '&#127919; TC Clipper: ' + msg;
+  const status = document.createElement('div');
+  const controls = document.createElement('div');
+  controls.style.cssText = 'display:flex;gap:8px;margin-top:9px';
+
+  function makeButton(label) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = label;
+    button.style.cssText = [
+      'border:1px solid rgba(255,255,255,.8)',
+      'border-radius:6px',
+      'padding:5px 9px',
+      'background:#fff',
+      'color:#8b0000',
+      'font:600 12px system-ui,-apple-system,Segoe UI,sans-serif',
+      'cursor:pointer',
+    ].join(';');
+    return button;
   }
 
-  function sleep(ms) {
-    return new Promise(function (r) { setTimeout(r, ms); });
+  const pauseButton = makeButton('Pause');
+  const stopButton = makeButton('Stop');
+  controls.append(pauseButton, stopButton);
+  panel.append(status, controls);
+  document.body.appendChild(panel);
+
+  function setStatus(message) {
+    status.textContent = `🎯 TC Clipper: ${message}`;
   }
 
-  function simulateClick(el) {
-    // Try multiple click methods for mobile compatibility
-    ['mousedown', 'mouseup', 'click'].forEach(type => {
-      el.dispatchEvent(new MouseEvent(type, { bubbles: true, cancelable: true }));
+  pauseButton.addEventListener('click', () => {
+    paused = !paused;
+    pauseButton.textContent = paused ? 'Resume' : 'Pause';
+    setStatus(paused ? `Paused (${clipped} saved)` : `Resuming (${clipped} saved)`);
+  });
+
+  stopButton.addEventListener('click', () => {
+    stopped = true;
+    setStatus(`Stopped — ${clipped} saved${failed ? `, ${failed} unconfirmed` : ''}`);
+    controls.remove();
+    panel.style.cursor = 'pointer';
+    panel.title = 'Click to dismiss';
+    panel.addEventListener('click', () => panel.remove(), { once: true });
+  });
+
+  async function waitWhilePaused() {
+    while (paused && !stopped) await sleep(250);
+  }
+
+  function elementText(element) {
+    return (element.innerText || element.textContent || '').replace(/\s+/g, ' ').trim();
+  }
+
+  function isVisible(element) {
+    if (!element.isConnected || element.hidden) return false;
+    const style = window.getComputedStyle(element);
+    const rect = element.getBoundingClientRect();
+    return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+  }
+
+  function findButtons() {
+    return [...document.querySelectorAll('button, [role="button"]')].filter((element) => {
+      if (attempted.has(element) || element.disabled || element.getAttribute('aria-disabled') === 'true') return false;
+      const text = elementText(element);
+      return isVisible(element) && actionableText.test(text) && !completedText.test(text);
     });
-    el.click();
   }
 
-  async function clipAll() {
-    setStatus('Waiting for page to load...');
-    await sleep(2500);
+  async function clickAndConfirm(button) {
+    attempted.add(button);
+    button.scrollIntoView({ block: 'center', inline: 'nearest' });
+    await sleep(150);
 
-    // Wait for buttons to appear
-    for (var w = 0; w < 30; w++) {
-      if (findButtons().length > 0) break;
-      await sleep(500);
+    const before = elementText(button);
+    button.click();
+    await sleep(CONFIG.clickDelayMs);
+
+    const after = elementText(button);
+    const confirmed = !button.isConnected || button.disabled || completedText.test(after) || after !== before;
+    if (confirmed) clipped += 1;
+    else failed += 1;
+  }
+
+  async function revealLazyContent() {
+    let stableRounds = 0;
+    let previousHeight = 0;
+
+    for (let round = 0; round < CONFIG.maxScanRounds && stableRounds < CONFIG.stableRoundsToStop; round += 1) {
+      if (stopped) return;
+      await waitWhilePaused();
+      window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'auto' });
+      await sleep(CONFIG.scanDelayMs);
+
+      const currentHeight = document.documentElement.scrollHeight;
+      stableRounds = currentHeight === previousHeight ? stableRounds + 1 : 0;
+      previousHeight = currentHeight;
+      setStatus(`Scanning offers… ${clipped} saved`);
     }
+  }
 
-    setStatus('Scrolling to load all deals...');
+  async function run() {
+    const originalX = window.scrollX;
+    const originalY = window.scrollY;
 
-    // Vertical scroll pass
-    var lastH = 0;
-    for (var i = 0; i < MAX_SCROLLS; i++) {
-      window.scrollTo(0, document.body.scrollHeight);
-      await sleep(SCROLL_DELAY_MS);
-      var h = document.body.scrollHeight;
-      if (h === lastH) break;
-      lastH = h;
-    }
+    try {
+      setStatus('Waiting for offers…');
+      await sleep(CONFIG.settleDelayMs);
 
-    // Horizontal carousel scroll pass
-    setStatus('Scanning carousels...');
-    await scrollAllCarousels();
+      for (let pass = 1; pass <= CONFIG.maxScanRounds && clipped + failed < CONFIG.maxClickAttempts; pass += 1) {
+        if (stopped) return;
+        await waitWhilePaused();
 
-    window.scrollTo(0, 0);
-    await sleep(800);
+        const buttons = findButtons();
+        if (!buttons.length) {
+          await revealLazyContent();
+          if (!findButtons().length) break;
+          continue;
+        }
 
-    var total = findButtons().length;
-    setStatus('Found <b>' + total + '</b> coupons. Clipping...');
-    await sleep(600);
-
-    var clipped = 0;
-
-    // Multi-pass: keep going until no buttons remain
-    for (var pass = 0; pass < 10; pass++) {
-      var btns = findButtons();
-      if (btns.length === 0) break;
-
-      for (var j = 0; j < btns.length; j++) {
-        var btn = btns[j];
-        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        await sleep(400);
-        simulateClick(btn);
-        clipped++;
-        setStatus('Clipped <b>' + clipped + '</b> / ' + total + '...');
-        await sleep(DELAY_MS);
+        for (const button of buttons) {
+          if (stopped || clipped + failed >= CONFIG.maxClickAttempts) break;
+          await waitWhilePaused();
+          setStatus(`Saving offer ${clipped + failed + 1}…`);
+          await clickAndConfirm(button);
+        }
       }
 
-      // After each pass, scroll again to reveal lazy-loaded buttons
-      window.scrollTo(0, 0);
-      await sleep(500);
-      for (var k = 0; k < MAX_SCROLLS; k++) {
-        window.scrollTo(0, document.body.scrollHeight);
-        await sleep(SCROLL_DELAY_MS);
-        var newH = document.body.scrollHeight;
-        if (newH === lastH) break;
-        lastH = newH;
-      }
-      await scrollAllCarousels();
-      window.scrollTo(0, 0);
-      await sleep(800);
-    }
-
-    setStatus(
-      '&#x2705; Done! Clipped <b>' + clipped + '</b> coupons. ' +
-      '<span style="font-weight:normal;font-size:12px">(click to dismiss)</span>'
-    );
-    overlay.style.cursor = 'pointer';
-    overlay.addEventListener('click', function () { overlay.remove(); });
-  }
-
-  function waitForBody() {
-    if (document.body) {
-      setTimeout(clipAll, 3000);
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        setTimeout(clipAll, 3000);
-      });
+      window.scrollTo({ left: originalX, top: originalY, behavior: 'auto' });
+      setStatus(`Done — ${clipped} saved${failed ? `, ${failed} unconfirmed` : ''}`);
+      controls.remove();
+      panel.style.cursor = 'pointer';
+      panel.title = 'Click to dismiss';
+      panel.addEventListener('click', () => panel.remove(), { once: true });
+    } catch (error) {
+      console.error('[Target Circle Clipper]', error);
+      setStatus(`Stopped after an error — ${clipped} saved`);
+    } finally {
+      window.__targetCircleClipperRunning = false;
     }
   }
 
-  waitForBody();
+  run();
 })();
