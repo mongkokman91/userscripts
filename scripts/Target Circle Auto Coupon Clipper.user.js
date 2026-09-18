@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
-// @version      3.4.1
+// @version      3.5.0
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
@@ -25,12 +25,21 @@
   const status = document.createElement('div');
   const stop = document.createElement('button');
   stop.textContent = 'Stop';
-  panel.append(status, stop);
+  const start = document.createElement('button');
+  start.textContent = 'Clip all';
+  for (const button of [start, stop]) {
+    button.type = 'button';
+    button.style.cssText = 'margin:10px 8px 0 0;padding:8px 14px;background:white;color:#a00;border:0;border-radius:6px;font:bold 14px system-ui;cursor:pointer';
+  }
+  stop.disabled = true;
+  panel.append(status, start, stop);
   document.body.append(panel);
   let stopped = false, running = false, saved = 0, loads = 0;
-  const attempted = new WeakSet();
+  let attempted = new WeakSet();
+  let unconfirmed = 0;
+  const BATCH_SIZE = 5, CLICK_GAP_MS = 200;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const say = message => { status.textContent = 'TC Clipper v3.4.1: ' + message; };
+  const say = message => { status.textContent = 'TC Clipper v3.5.0: ' + message; };
   const labels = el => [el.innerText || el.textContent || el.value || '', el.getAttribute('aria-label') || '', el.title || '']
     .map(s => s.replace(/\s+/g, ' ').trim());
   const matches = (el, re) => labels(el).some(s => re.test(s));
@@ -49,33 +58,60 @@
   const fingerprint = () => controls().filter(el => matches(el, applyRE) || matches(el, doneRE))
     .map(el => (el.parentElement?.textContent || labels(el)[0]).replace(/\s+/g, ' ')).join('|');
 
-  stop.onclick = () => { stopped = true; observer.disconnect(); clearInterval(timer); say('Stopped — ' + saved + ' confirmed applied'); };
+  stop.onclick = () => { stopped = true; say('Stopping — finishing confirmation…'); };
+  start.onclick = () => { if (!running) void run(); };
   async function run() {
-    if (running || stopped || !onDeals()) return;
+    if (running) return;
+    if (!onDeals()) { say('Open Target Deals, then click Clip all.'); return; }
+    stopped = false;
+    attempted = new WeakSet();
+    saved = 0; loads = 0; unconfirmed = 0;
     running = true;
+    start.disabled = true; stop.disabled = false;
+    let idle = 0;
     try {
       for (let actions = 0; actions < 1000 && !stopped && onDeals(); actions++) {
-        const button = findApply();
-        if (button) {
-          attempted.add(button);
-          button.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
-          await sleep(200);
-          if (stopped || !onDeals()) break;
-          if (!button.isConnected || !enabled(button) || !matches(button, applyRE)) continue;
-          say('Applying coupon… ' + saved + ' confirmed');
-          button.click(); // Exactly one click; never click an Applied toggle.
-          for (let n = 0; n < 24 && !stopped; n++) {
+        if (findApply()) {
+          idle = 0;
+          const pending = [];
+          for (let n = 0; n < BATCH_SIZE && !stopped && onDeals(); n++) {
+            const button = findApply(); // Re-query after every click: React may replace nodes.
+            if (!button) break;
+            attempted.add(button);
+            button.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
+            if (!enabled(button) || !button.isConnected || matches(button, doneRE)) continue;
+            button.click();
+            pending.push(button);
+            say('Applying batch… ' + saved + ' confirmed');
+            await sleep(CLICK_GAP_MS);
+          }
+          const confirmed = new Set();
+          for (let n = 0; n < 24; n++) {
+            for (const button of pending) {
+              if (button.isConnected && matches(button, doneRE)) confirmed.add(button);
+            }
+            if (confirmed.size === pending.length || stopped || !onDeals()) break;
             await sleep(250);
-            if (button.isConnected && matches(button, doneRE)) { saved++; break; }
+          }
+          saved += confirmed.size;
+          unconfirmed += pending.length - confirmed.size;
+          if (confirmed.size < pending.length) {
+            say(saved + ' confirmed; ' + unconfirmed + ' unconfirmed. Paused to avoid repeating uncertain saves. Click Clip all to rescan.');
+            return;
           }
           continue;
         }
         const more = findMore();
         if (!more) {
-          say(saved + ' confirmed applied; ' + loads + ' batches loaded. Watching for more offers…');
-          break; // Observer/timer resume on delayed rendering and SPA navigation.
+          if (++idle < 5) { say('Waiting for any remaining offers…'); await sleep(1000); continue; }
+          say('Finished — ' + saved + ' confirmed applied; ' + loads + ' batches loaded.');
+          return;
         }
-        if (!enabled(more)) { say('Waiting for Load more to become ready…'); break; }
+        if (!enabled(more)) {
+          if (++idle >= 15) { say('Load more stayed disabled. Click Clip all to retry.'); return; }
+          say('Waiting for Load more…'); await sleep(1000); continue;
+        }
+        idle = 0;
         more.scrollIntoView({ block: 'center', behavior: 'instant' });
         await sleep(250);
         if (stopped || !onDeals()) break;
@@ -100,14 +136,8 @@
       stopped = true;
       say('Error: ' + error.message);
       console.error('[TC Clipper]', error);
-    } finally { running = false; }
+      say((stopped ? 'Stopped' : !onDeals() ? 'Page changed' : 'Run limit reached') + ' — ' + saved + ' confirmed; ' + unconfirmed + ' unconfirmed.');
+    } finally { running = false; start.disabled = false; stop.disabled = true; }
   }
-  // Ignore our own status updates so they cannot trigger a busy observer loop.
-  const observer = new MutationObserver(records => {
-    if (records.some(record => !panel.contains(record.target))) void run();
-  });
-  observer.observe(document.body, { childList: true, subtree: true, characterData: true, attributes: true, attributeFilter: ['disabled', 'aria-disabled'] });
-  const timer = setInterval(() => void run(), 2000);
-  say('Ready — waiting for Target offers…');
-  void run();
+  say('Ready — click Clip all to apply coupons and load more.');
 })();
