@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Ginger Tracker">
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" href="./icon.svg" type="image/svg+xml">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
   --bg:#f4f7fb;--surface:#fff;--surface2:#f8faff;--text:#172033;--muted:#6d788a;--line:#dfe5ee;
@@ -281,7 +282,37 @@ function addDays(k,n){const d=parseKey(k);d.setDate(d.getDate()+n);return key(d)
 function formatDate(k){return parseKey(k).toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
 function nowKey(){return key(new Date())}
 function load(k){try{const x=JSON.parse(localStorage.getItem("ginger:"+k)||"{}");return {checks:x.checks||{},notes:x.notes||"",givenAt:x.givenAt||{}}}catch(e){return {checks:{},notes:"",givenAt:{}}}}
-function save(k,d){localStorage.setItem("ginger:"+k,JSON.stringify(d))}
+function save(k,d){localStorage.setItem("ginger:"+k,JSON.stringify(d));syncToCloud(k,d)}
+async function syncToCloud(k,d){
+  try{
+    await cloud.from("ginger_state").upsert({day:k,checks:d.checks||{},notes:d.notes||"",given_at:d.givenAt||{},updated_at:new Date().toISOString()},{onConflict:"day"});
+  }catch(e){}
+}
+async function loadCloud(k){
+  try{
+    const {data:row,error}=await cloud.from("ginger_state").select("checks,notes,given_at").eq("day",k).maybeSingle();
+    if(error)return;
+    if(row){
+      data={checks:row.checks||{},notes:row.notes||"",givenAt:row.given_at||{}};
+      localStorage.setItem("ginger:"+k,JSON.stringify(data));
+      render();
+    }else{
+      const local=load(k);
+      if(Object.keys(local.checks||{}).length||local.notes||Object.keys(local.givenAt||{}).length)await syncToCloud(k,local);
+    }
+  }catch(e){}
+}
+function subscribeCloud(){
+  if(channel)cloud.removeChannel(channel);
+  channel=cloud.channel("ginger-shared-state")
+    .on("postgres_changes",{event:"*",schema:"public",table:"ginger_state"},payload=>{
+      if(payload.new&&payload.new.day===selected){
+        data={checks:payload.new.checks||{},notes:payload.new.notes||"",givenAt:payload.new.given_at||{}};
+        localStorage.setItem("ginger:"+selected,JSON.stringify(data));
+        render();
+      }
+    }).subscribe(status=>{cloudReady=status==="SUBSCRIBED";});
+}
 function activeMeds(k){return MEDS.filter(m=>k>=m.start&&k<=m.end)}
 function tasksFor(k){return activeMeds(k).flatMap(m=>m.doses.map(d=>({id:d[0],label:d[1],mins:d[2],name:m.name,note:m.note,badges:m.badges})))}
 function groupFor(m){if(m<360)return"OVERNIGHT";if(m<720)return"MORNING";if(m<1020)return"AFTERNOON";if(m<1320)return"EVENING";return"OVERNIGHT"}
@@ -301,7 +332,10 @@ function badgeHtml(t){
   (t.badges||[]).forEach(b=>{s+='<span class="tag '+((b.includes("FOOD")||b.includes("MEAL"))?"food":b.includes("VET")?"warn":"")+'">'+b+'</span>'});
   return s;
 }
-let selected=nowKey(),data=load(selected),lastAction=null,snackTimer=null;
+const SUPABASE_URL="https://yuelrgovlhlggupjbhow.supabase.co";
+const SUPABASE_KEY="sb_publishable_f1NraD7NWJqXgSRVYbBytg_Wa_DuJwc";
+const cloud=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+let selected=nowKey(),data=load(selected),lastAction=null,snackTimer=null,channel=null,cloudReady=false;
 
 function markGiven(id,showUndo=true){
   if(data.checks[id])return;
@@ -322,7 +356,7 @@ function jumpTo(id){
   const el=document.querySelector('[data-dose-id="'+id+'"]');
   if(el)el.scrollIntoView({behavior:"smooth",block:"center"});
 }
-function setDay(k){selected=k;data=load(k);render()}
+function setDay(k){selected=k;data=load(k);render();loadCloud(k)}
 
 function render(){
   const today=nowKey(),isToday=selected===today,now=new Date(),nowMins=now.getHours()*60+now.getMinutes(),tasks=tasksFor(selected);
@@ -458,6 +492,8 @@ document.getElementById("undoBtn").onclick=()=>{
   if(lastAction&&lastAction.day===selected){unmark(lastAction.id);document.getElementById("snackbar").classList.remove("show");lastAction=null}
 };
 render();
+subscribeCloud();
+loadCloud(selected);
 
 if("serviceWorker" in navigator)window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js").catch(()=>{}));
 </script>
