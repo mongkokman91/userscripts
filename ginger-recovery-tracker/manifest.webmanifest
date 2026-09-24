@@ -1,0 +1,18 @@
+{
+  "name": "Ginger Recovery Tracker",
+  "short_name": "Ginger Tracker",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f7fb",
+  "theme_color": "#3567e7",
+  "description": "Medication and post-op recovery tracker for Ginger.",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
