@@ -4,43 +4,209 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>Ginger Recovery Tracker</title>
+<meta name="theme-color" content="#f6f8fb">
 <style>
-:root{--bg:#f6f7f8;--card:#fff;--text:#16181d;--muted:#68707d;--line:#d9dee5;--accent:#2457d6;--warn:#b42318;--warnbg:#fff0ed;--done:#eef2f5;--badge:#eef3ff}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:16px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif}
-.wrap{max-width:720px;margin:0 auto;padding:14px}.topbar{position:sticky;top:0;z-index:10;background:rgba(246,247,248,.96);padding-top:8px}
-h1{font-size:24px;margin:0 0 8px}h2{font-size:16px;margin:18px 0 8px;text-transform:uppercase;letter-spacing:.03em}
-.nav{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}.nav button,.reset{padding:11px 8px;border:1px solid var(--line);background:#fff;border-radius:9px;font:inherit}
-.date{font-weight:700;margin:8px 0 4px}.progress{display:flex;justify-content:space-between;gap:12px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff;font-weight:700}
-.nextbox{margin-top:10px;padding:12px;border:2px solid var(--accent);border-radius:10px;background:#fff}.nextbox .label{font-size:12px;font-weight:800;color:var(--accent);text-transform:uppercase}.nextbox .main{font-size:18px;font-weight:800;margin-top:2px}
-.group{margin-top:12px}.group-title{font-size:13px;font-weight:800;color:var(--muted);margin:8px 2px}
-.row{display:grid;grid-template-columns:auto 74px 1fr;gap:10px;align-items:center;min-height:62px;padding:10px 12px;margin:6px 0;border:1px solid var(--line);border-radius:10px;background:var(--card)}
-.row.overdue{border-color:#f1b5ac;background:var(--warnbg)}.row.done{opacity:.55;background:var(--done)}.row input{width:26px;height:26px}.time{font-weight:800;font-size:16px}.med{font-weight:700}.meta{font-size:12px;color:var(--muted);margin-top:3px}
-.badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}.badge{font-size:10px;font-weight:800;padding:3px 6px;border-radius:999px;background:var(--badge);color:#29437f}.badge.warn{background:#ffe8e3;color:var(--warn)}.badge.food{background:#eef7ea;color:#28681f}
-.care .row{grid-template-columns:auto 1fr}.care .row span{font-weight:650}textarea{width:100%;min-height:100px;padding:10px;border:1px solid var(--line);border-radius:10px;font:inherit;background:#fff}
-.upcoming{padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}.upcoming div+div{margin-top:6px}.reset{width:100%;margin:16px 0;color:#8a1c13}
-.empty{padding:12px;border:1px dashed var(--line);border-radius:10px;color:var(--muted);background:#fff}
-@media(max-width:520px){.wrap{padding:10px}.row{grid-template-columns:auto 66px 1fr;gap:8px;padding:10px 9px}.nav button{font-size:13px}}
+:root{
+  --bg:#f4f7fb;--card:#fff;--text:#172033;--muted:#6f7a8d;--line:#dfe5ee;
+  --accent:#3567e7;--accent2:#7d5cff;--good:#1f8f5f;--warn:#bd3d2d;--warnbg:#fff2ef;
+  --done:#eef2f6;--badge:#eef3ff;--shadow:0 8px 24px rgba(25,42,70,.08);
+  --morning:#f2b84b;--afternoon:#3f82f7;--evening:#8a67e8;--overnight:#49546d;
+}
+*{box-sizing:border-box}
+body{
+  margin:0;
+  background:
+    radial-gradient(circle at 15% -10%,rgba(53,103,231,.10),transparent 28%),
+    radial-gradient(circle at 100% 0,rgba(125,92,255,.08),transparent 26%),
+    var(--bg);
+  color:var(--text);
+  font:16px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif
+}
+button,input,textarea{font:inherit}
+.wrap{max-width:760px;margin:0 auto;padding:14px}
+.topbar{
+  position:sticky;top:0;z-index:10;
+  background:linear-gradient(to bottom,rgba(244,247,251,.98),rgba(244,247,251,.94));
+  backdrop-filter:blur(10px);padding-top:8px;padding-bottom:8px
+}
+.hero{
+  display:grid;grid-template-columns:54px 1fr;gap:12px;align-items:center;
+  padding:10px 12px;border:1px solid var(--line);background:#fff;border-radius:16px;box-shadow:var(--shadow)
+}
+.hero-icon{
+  width:54px;height:54px;border-radius:15px;display:grid;place-items:center;
+  background:linear-gradient(145deg,#f2d8a7,#e7bf78);font-size:29px
+}
+h1{font-size:23px;margin:0}
+.hero-sub{font-size:13px;color:var(--muted);margin-top:2px}
+.nav{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:10px 0}
+.nav button,.reset{
+  padding:11px 8px;border:1px solid var(--line);background:#fff;border-radius:11px;
+  color:var(--text);box-shadow:0 2px 8px rgba(25,42,70,.03)
+}
+.nav #today{font-weight:800;border-color:#b8c8f8;background:#f4f7ff;color:#254fba}
+.date{font-weight:800;margin:8px 2px 7px}
+.summary-grid{display:grid;grid-template-columns:92px 1fr;gap:10px}
+.ring-card,.progress{
+  border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)
+}
+.ring-card{display:grid;place-items:center;padding:9px}
+.progress-ring{
+  --pct:0;
+  width:72px;height:72px;border-radius:50%;
+  background:conic-gradient(var(--accent) calc(var(--pct)*1%),#e8edf6 0);
+  display:grid;place-items:center;position:relative
+}
+.progress-ring:after{
+  content:"";width:54px;height:54px;border-radius:50%;background:#fff;position:absolute
+}
+.progress-ring span{position:relative;z-index:1;font-size:15px;font-weight:900}
+.progress{display:flex;flex-direction:column;justify-content:center;padding:12px 14px}
+.progress strong{font-size:17px}
+.progress small{color:var(--muted);margin-top:3px}
+.nextbox{
+  margin-top:10px;padding:13px 14px;border:1px solid #b9c8f7;border-left:5px solid var(--accent);
+  border-radius:14px;background:linear-gradient(135deg,#fff,#f6f8ff);box-shadow:var(--shadow)
+}
+.nextbox .label{font-size:11px;font-weight:900;color:var(--accent);text-transform:uppercase;letter-spacing:.08em}
+.nextbox .main{font-size:18px;font-weight:900;margin-top:3px}
+.nextbox .hint{font-size:12px;color:var(--muted);margin-top:4px}
+section{margin-top:18px}
+h2{
+  display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 8px;
+  text-transform:uppercase;letter-spacing:.05em
+}
+h2 .section-icon{
+  width:26px;height:26px;border-radius:8px;display:grid;place-items:center;background:#eaf0ff
+}
+.group{margin-top:14px}
+.group-title{
+  display:flex;align-items:center;gap:8px;font-size:12px;font-weight:900;color:var(--muted);margin:8px 2px
+}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--group,#999)}
+.timeline{position:relative}
+.timeline:before{
+  content:"";position:absolute;left:25px;top:16px;bottom:16px;width:2px;background:#e6ebf3
+}
+.row{
+  position:relative;display:grid;grid-template-columns:auto 72px 1fr;gap:10px;align-items:center;
+  min-height:66px;padding:10px 12px;margin:7px 0;border:1px solid var(--line);border-radius:14px;
+  background:var(--card);box-shadow:0 5px 16px rgba(25,42,70,.05)
+}
+.row:before{
+  content:"";position:absolute;left:-1px;top:14px;bottom:14px;width:4px;border-radius:3px;background:var(--rowAccent,#d7deea)
+}
+.row.overdue{border-color:#f0b9b0;background:var(--warnbg);--rowAccent:var(--warn)}
+.row.done{opacity:.56;background:var(--done);box-shadow:none}
+.row input{width:27px;height:27px;accent-color:var(--accent)}
+.time{font-weight:900;font-size:16px}
+.med{font-weight:800}
+.meta{font-size:12px;color:var(--muted);margin-top:4px}
+.badges{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.badge{font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;background:var(--badge);color:#29437f}
+.badge.warn{background:#ffe7e2;color:var(--warn)}
+.badge.food{background:#e9f7ef;color:#236c48}
+.status-chip{
+  display:inline-flex;align-items:center;gap:4px;padding:3px 7px;border-radius:999px;
+  background:#f1f4f8;color:#647084;font-size:10px;font-weight:800
+}
+.care-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.care .row{grid-template-columns:auto 1fr;min-height:58px;margin:0}
+.care .row span{font-weight:750}
+.care-icon{margin-right:6px}
+textarea{
+  width:100%;min-height:105px;padding:12px;border:1px solid var(--line);border-radius:14px;
+  font:inherit;background:#fff;box-shadow:var(--shadow);resize:vertical
+}
+.upcoming{display:grid;gap:8px}
+.event{
+  display:grid;grid-template-columns:42px 1fr;gap:10px;align-items:center;
+  padding:11px 12px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)
+}
+.event-icon{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;background:#f0f4ff;font-size:21px}
+.event b{display:block}
+.event small{color:var(--muted)}
+.reset{width:100%;margin:18px 0 24px;color:#8a1c13}
+.empty{padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--muted);background:#fff}
+.footer-note{text-align:center;color:var(--muted);font-size:11px;margin:4px 0 22px}
+@media(max-width:560px){
+  .wrap{padding:10px}
+  .summary-grid{grid-template-columns:84px 1fr}
+  .ring-card{padding:7px}
+  .progress-ring{width:66px;height:66px}
+  .progress-ring:after{width:50px;height:50px}
+  .row{grid-template-columns:auto 64px 1fr;gap:8px;padding:10px}
+  .care-grid{grid-template-columns:1fr}
+  .nav button{font-size:13px}
+}
 </style>
 </head>
 <body>
 <div class="wrap">
   <div class="topbar">
-    <h1>Ginger Recovery Tracker</h1>
-    <div class="nav"><button id="prev">← Previous</button><button id="today">Today</button><button id="nextDay">Next →</button></div>
+    <div class="hero">
+      <div class="hero-icon">🐶</div>
+      <div>
+        <h1>Ginger Recovery Tracker</h1>
+        <div class="hero-sub">Medication, care & recovery at a glance</div>
+      </div>
+    </div>
+
+    <div class="nav">
+      <button id="prev">← Previous</button>
+      <button id="today">Today</button>
+      <button id="nextDay">Next →</button>
+    </div>
+
     <div class="date" id="dateLabel"></div>
-    <div class="progress"><span id="progressText"></span><span id="remainingText"></span></div>
+
+    <div class="summary-grid">
+      <div class="ring-card">
+        <div class="progress-ring" id="progressRing"><span id="ringText">0%</span></div>
+      </div>
+      <div class="progress">
+        <strong id="progressText"></strong>
+        <small id="remainingText"></small>
+      </div>
+    </div>
+
     <div class="nextbox" id="nextBanner"></div>
   </div>
+
   <section id="medSection"></section>
-  <section class="care"><h2>Daily Care</h2><div id="careList"></div></section>
-  <section><h2>Notes</h2><textarea id="notes" placeholder="Notes for this day..."></textarea></section>
-  <section><h2>Upcoming</h2><div class="upcoming">
-    <div><b>Oct 6, 2026 · 10:45 AM</b> — Suture removal</div>
-    <div><b>Around Nov 17, 2026</b> — Repeat X-rays</div>
-    <div><b>6–8 weeks</b> — Activity restriction: no running, jumping, stairs, off-leash activity, or play</div>
-  </div></section>
+
+  <section class="care">
+    <h2><span class="section-icon">🩹</span>Daily Care</h2>
+    <div class="care-grid" id="careList"></div>
+  </section>
+
+  <section>
+    <h2><span class="section-icon">📝</span>Notes</h2>
+    <textarea id="notes" placeholder="Notes for this day..."></textarea>
+  </section>
+
+  <section>
+    <h2><span class="section-icon">📅</span>Upcoming</h2>
+    <div class="upcoming">
+      <div class="event">
+        <div class="event-icon">✂️</div>
+        <div><b>Oct 6, 2026 · 10:45 AM</b><small>Suture removal</small></div>
+      </div>
+      <div class="event">
+        <div class="event-icon">🩻</div>
+        <div><b>Around Nov 17, 2026</b><small>Repeat X-rays</small></div>
+      </div>
+      <div class="event">
+        <div class="event-icon">🚫</div>
+        <div><b>6–8 weeks</b><small>No running, jumping, stairs, off-leash activity, or play</small></div>
+      </div>
+    </div>
+  </section>
+
   <button class="reset" id="reset">Reset this day</button>
+  <div class="footer-note">Progress is saved locally on this device.</div>
 </div>
+
 <script>
 const MEDS=[
 {name:"Gabapentin 100 mg",start:"2026-09-23",end:"2026-10-22",doses:[["gaba-0800","8:00 AM",480],["gaba-1600","4:00 PM",960],["gaba-0000","12:00 AM",0]],note:"Every 8h for 30 days",badges:[]},
@@ -50,6 +216,14 @@ const MEDS=[
 {name:"Robenacoxib (Onsior) 10 mg",start:"2026-09-26",end:"2026-10-09",doses:[["ons-0800","8:00 AM",480]],note:"Once daily",badges:["FULL MEAL"]}
 ];
 const CARE=["Cold compress 1","Cold compress 2","Cold compress 3","Incision check AM","Incision check PM","Bedding washed","E-collar / no licking confirmed","Appetite / water checked"];
+const CARE_ICONS=["❄️","❄️","❄️","🔎","🔎","🧺","🛡️","🥣"];
+const GROUP_META={
+  "MORNING":{icon:"☀️",color:"var(--morning)"},
+  "AFTERNOON":{icon:"🌤️",color:"var(--afternoon)"},
+  "EVENING":{icon:"🌆",color:"var(--evening)"},
+  "OVERNIGHT":{icon:"🌙",color:"var(--overnight)"},
+  "OVERDUE / NOW":{icon:"⏰",color:"var(--warn)"}
+};
 const pad=n=>String(n).padStart(2,"0");
 function key(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function parseKey(k){const [y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)}
@@ -67,34 +241,66 @@ function setDay(k){selected=k;data=load(k);render()}
 function toggleMed(id){const on=!data.checks[id];data.checks[id]=on;if(on)data.givenAt[id]=new Date().toISOString();else delete data.givenAt[id];save(selected,data);render()}
 function toggleCare(i){const id="care-"+i;data.checks[id]=!data.checks[id];save(selected,data);render()}
 function badgeHtml(b){return (b||[]).map(x=>`<span class="badge ${x.includes("FOOD")||x.includes("MEAL")?"food":x.includes("VET")?"warn":""}">${x}</span>`).join("")}
+function groupHeader(title){
+  const m=GROUP_META[title]||{icon:"•",color:"#999"};
+  return `<div class="group-title" style="--group:${m.color}"><span class="dot"></span><span>${m.icon}</span><span>${title}</span></div>`;
+}
+function rowAccent(title){return (GROUP_META[title]||{}).color||"#d7deea"}
 function render(){
   const isToday=selected===nowKey(),now=new Date(),nowMins=now.getHours()*60+now.getMinutes(),tasks=allTasks(selected);
-  document.getElementById("dateLabel").textContent=formatDate(selected)+(isToday?" (today)":"");
+  document.getElementById("dateLabel").textContent=formatDate(selected)+(isToday?" · Today":"");
+
   const ids=[...tasks.map(t=>t.id),...CARE.map((_,i)=>"care-"+i)],done=ids.filter(id=>data.checks[id]).length;
+  const pct=ids.length?Math.round(done/ids.length*100):0;
   document.getElementById("progressText").textContent=`${done} / ${ids.length} completed`;
   document.getElementById("remainingText").textContent=`${ids.length-done} remaining`;
+  document.getElementById("ringText").textContent=`${pct}%`;
+  document.getElementById("progressRing").style.setProperty("--pct",pct);
+
   const incomplete=tasks.filter(t=>!data.checks[t.id]).sort((a,b)=>a.mins-b.mins);
   let nt=isToday?(incomplete.find(t=>t.mins>=nowMins)||incomplete[0]||null):(incomplete[0]||null);
-  document.getElementById("nextBanner").innerHTML=nt?`<div class="label">Next</div><div class="main">${nt.label} · ${nt.name}</div><div class="badges">${badgeHtml(nt.badges)}</div>`:`<div class="label">Next</div><div class="main">All scheduled medications complete for this day.</div>`;
-  const section=document.getElementById("medSection");section.innerHTML="";
-  if(!tasks.length){section.innerHTML='<h2>Medications</h2><div class="empty">No medications scheduled for this date.</div>'}
-  else{
+  document.getElementById("nextBanner").innerHTML=nt?
+    `<div class="label">Next medication</div><div class="main">${nt.label} · ${nt.name}</div><div class="badges">${badgeHtml(nt.badges)}</div><div class="hint">Tap the checkbox below after giving the dose.</div>`:
+    `<div class="label">Next medication</div><div class="main">✓ All scheduled medications complete</div><div class="hint">Nothing else is scheduled for this day.</div>`;
+
+  const section=document.getElementById("medSection");section.innerHTML='<h2><span class="section-icon">💊</span>Medications</h2>';
+  if(!tasks.length){
+    section.innerHTML+='<div class="empty">No medications scheduled for this date.</div>'
+  } else {
     const overdue=isToday?tasks.filter(t=>!data.checks[t.id]&&t.mins<nowMins):[],overdueIds=new Set(overdue.map(t=>t.id));
     const renderGroup=(title,list,flag)=>{
       if(!list.length)return;
       list.sort((a,b)=>{const ad=!!data.checks[a.id],bd=!!data.checks[b.id];return ad!==bd?(ad?1:-1):a.mins-b.mins});
-      const g=document.createElement("div");g.className="group";g.innerHTML=`<div class="group-title">${title}</div>`;
-      list.forEach(t=>{const checked=!!data.checks[t.id],row=document.createElement("label");row.className="row"+(checked?" done":"")+(flag&&!checked?" overdue":"");
+      const g=document.createElement("div");g.className="group";
+      g.innerHTML=groupHeader(title)+'<div class="timeline"></div>';
+      const line=g.querySelector(".timeline");
+      list.forEach(t=>{
+        const checked=!!data.checks[t.id],row=document.createElement("label");
+        row.className="row"+(checked?" done":"")+(flag&&!checked?" overdue":"");
+        row.style.setProperty("--rowAccent",rowAccent(title));
         const status=checked?(data.givenAt[t.id]?`Given ${fmtGiven(data.givenAt[t.id])}`:"Completed"):(flag?"Overdue":t.note);
-        row.innerHTML=`<input type="checkbox" ${checked?"checked":""}><div class="time">${t.label}</div><div><div class="med">${t.name}</div><div class="badges">${badgeHtml(t.badges)}</div><div class="meta">${status}</div></div>`;
-        row.querySelector("input").onchange=()=>toggleMed(t.id);g.appendChild(row)});
+        const chip=checked?'<span class="status-chip">✓ done</span>':flag?'<span class="status-chip">⚠ overdue</span>':'';
+        row.innerHTML=`<input type="checkbox" ${checked?"checked":""}>
+          <div class="time">${t.label}</div>
+          <div><div class="med">${t.name}</div><div class="badges">${badgeHtml(t.badges)}${chip}</div><div class="meta">${status}</div></div>`;
+        row.querySelector("input").onchange=()=>toggleMed(t.id);
+        line.appendChild(row)
+      });
       section.appendChild(g)
     };
     renderGroup("OVERDUE / NOW",overdue,true);
     ["MORNING","AFTERNOON","EVENING","OVERNIGHT"].forEach(gr=>renderGroup(gr,tasks.filter(t=>groupFor(t.mins)===gr&&!overdueIds.has(t.id)),false))
   }
+
   const care=document.getElementById("careList");care.innerHTML="";
-  CARE.map((label,i)=>({label,i,id:"care-"+i,done:!!data.checks["care-"+i]})).sort((a,b)=>Number(a.done)-Number(b.done)).forEach(x=>{const r=document.createElement("label");r.className="row"+(x.done?" done":"");r.innerHTML=`<input type="checkbox" ${x.done?"checked":""}><span>${x.label}</span>`;r.querySelector("input").onchange=()=>toggleCare(x.i);care.appendChild(r)});
+  CARE.map((label,i)=>({label,i,id:"care-"+i,done:!!data.checks["care-"+i]}))
+    .sort((a,b)=>Number(a.done)-Number(b.done))
+    .forEach(x=>{
+      const r=document.createElement("label");r.className="row"+(x.done?" done":"");
+      r.innerHTML=`<input type="checkbox" ${x.done?"checked":""}><span><span class="care-icon">${CARE_ICONS[x.i]}</span>${x.label}</span>`;
+      r.querySelector("input").onchange=()=>toggleCare(x.i);care.appendChild(r)
+    });
+
   const notes=document.getElementById("notes");if(notes.value!==data.notes)notes.value=data.notes||""
 }
 document.getElementById("prev").onclick=()=>setDay(addDays(selected,-1));
