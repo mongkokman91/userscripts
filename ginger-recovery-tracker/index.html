@@ -71,6 +71,28 @@ h1{font-size:23px;margin:0}
 .nextbox .label{font-size:11px;font-weight:900;color:var(--accent);text-transform:uppercase;letter-spacing:.08em}
 .nextbox .main{font-size:18px;font-weight:900;margin-top:3px}
 .nextbox .hint{font-size:12px;color:var(--muted);margin-top:4px}
+.current-dose{
+  margin-top:10px;padding:14px;border-radius:16px;background:linear-gradient(135deg,#172033,#263b67);
+  color:#fff;box-shadow:0 12px 28px rgba(23,32,51,.18);display:grid;grid-template-columns:50px 1fr;gap:12px;align-items:center
+}
+.current-dose .cd-icon{width:50px;height:50px;border-radius:14px;display:grid;place-items:center;background:rgba(255,255,255,.12);font-size:25px}
+.current-dose .cd-kicker{font-size:10px;font-weight:900;letter-spacing:.11em;text-transform:uppercase;color:#cbd6f6}
+.current-dose .cd-main{font-size:19px;font-weight:900;margin-top:2px}
+.current-dose .cd-sub{font-size:12px;color:#d9e0f5;margin-top:3px}
+.dayline{
+  margin-top:10px;padding:12px 12px 10px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:var(--shadow)
+}
+.dayline-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:9px;font-size:12px}
+.dayline-head b{font-size:13px}.dayline-head span{color:var(--muted)}
+.day-track{position:relative;height:28px}
+.day-track:before{content:"";position:absolute;left:0;right:0;top:12px;height:4px;border-radius:999px;background:#e9edf4}
+.day-progress{position:absolute;left:0;top:12px;height:4px;border-radius:999px;background:linear-gradient(90deg,var(--accent),var(--accent2));width:0}
+.now-pin{position:absolute;top:4px;width:3px;height:20px;border-radius:3px;background:#172033;transform:translateX(-50%)}
+.day-dot{position:absolute;top:8px;width:12px;height:12px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.08);transform:translateX(-50%);background:var(--dotColor,#8a96aa)}
+.day-dot.done{outline:2px solid rgba(31,143,95,.18)}
+.day-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:10px;margin-top:-2px}
+.med-id{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:900;padding:3px 7px;border-radius:999px;background:var(--medBg,#eef2f7);color:var(--medFg,#475467)}
+.med-id .pilldot{width:7px;height:7px;border-radius:50%;background:var(--medColor,#8a96aa)}
 section{margin-top:18px}
 h2{
   display:flex;align-items:center;gap:8px;font-size:15px;margin:0 0 8px;
@@ -170,7 +192,13 @@ textarea{
       </div>
     </div>
 
+    <div class="current-dose" id="currentDose"></div>
     <div class="nextbox" id="nextBanner"></div>
+    <div class="dayline">
+      <div class="dayline-head"><b>Day timeline</b><span id="timelineSummary"></span></div>
+      <div class="day-track" id="dayTrack"><div class="day-progress" id="dayProgress"></div><div class="now-pin" id="nowPin"></div></div>
+      <div class="day-labels"><span>12 AM</span><span>6 AM</span><span>12 PM</span><span>6 PM</span><span>12 AM</span></div>
+    </div>
   </div>
 
   <section id="medSection"></section>
@@ -224,6 +252,13 @@ const GROUP_META={
   "OVERNIGHT":{icon:"🌙",color:"var(--overnight)"},
   "OVERDUE / NOW":{icon:"⏰",color:"var(--warn)"}
 };
+const MED_META={
+  "Gabapentin 100 mg":{short:"Gabapentin",icon:"G",color:"#4f7df3",bg:"#edf3ff",fg:"#3158b7"},
+  "Cephalexin 250 mg":{short:"Cephalexin",icon:"C",color:"#1f9d6a",bg:"#eaf8f1",fg:"#257252"},
+  "Trazodone 50 mg":{short:"Trazodone",icon:"T",color:"#8a67e8",bg:"#f2edff",fg:"#6548bd"},
+  "Acetaminophen 80 mg":{short:"Acetaminophen",icon:"A",color:"#e38a2d",bg:"#fff4e7",fg:"#a95f19"},
+  "Robenacoxib (Onsior) 10 mg":{short:"Onsior",icon:"O",color:"#d14f72",bg:"#fff0f4",fg:"#9f3454"}
+};
 const pad=n=>String(n).padStart(2,"0");
 function key(d){return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`}
 function parseKey(k){const [y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)}
@@ -241,6 +276,10 @@ function setDay(k){selected=k;data=load(k);render()}
 function toggleMed(id){const on=!data.checks[id];data.checks[id]=on;if(on)data.givenAt[id]=new Date().toISOString();else delete data.givenAt[id];save(selected,data);render()}
 function toggleCare(i){const id="care-"+i;data.checks[id]=!data.checks[id];save(selected,data);render()}
 function badgeHtml(b){return (b||[]).map(x=>`<span class="badge ${x.includes("FOOD")||x.includes("MEAL")?"food":x.includes("VET")?"warn":""}">${x}</span>`).join("")}
+function medIdHtml(name){
+  const m=MED_META[name]||{short:name,color:"#8a96aa",bg:"#eef2f7",fg:"#475467"};
+  return `<span class="med-id" style="--medColor:${m.color};--medBg:${m.bg};--medFg:${m.fg}"><span class="pilldot"></span>${m.short}</span>`;
+}
 function groupHeader(title){
   const m=GROUP_META[title]||{icon:"•",color:"#999"};
   return `<div class="group-title" style="--group:${m.color}"><span class="dot"></span><span>${m.icon}</span><span>${title}</span></div>`;
@@ -259,6 +298,35 @@ function render(){
 
   const incomplete=tasks.filter(t=>!data.checks[t.id]).sort((a,b)=>a.mins-b.mins);
   let nt=isToday?(incomplete.find(t=>t.mins>=nowMins)||incomplete[0]||null):(incomplete[0]||null);
+
+  const overdueNow=isToday?incomplete.filter(t=>t.mins<nowMins).sort((a,b)=>b.mins-a.mins)[0]:null;
+  const current=overdueNow||nt;
+  const currentEl=document.getElementById("currentDose");
+  if(current){
+    const mm=MED_META[current.name]||{icon:"💊"};
+    const state=overdueNow?"Needs attention":"Coming up";
+    currentEl.innerHTML=`<div class="cd-icon">${mm.icon}</div><div><div class="cd-kicker">${state}</div><div class="cd-main">${current.label} · ${current.name}</div><div class="cd-sub">${overdueNow?"This scheduled dose is overdue.":"This is the next incomplete scheduled medication."}</div></div>`;
+  } else {
+    currentEl.innerHTML=`<div class="cd-icon">✓</div><div><div class="cd-kicker">Current status</div><div class="cd-main">Medication schedule complete</div><div class="cd-sub">No incomplete medication doses remain for this day.</div></div>`;
+  }
+
+  const track=document.getElementById("dayTrack");
+  track.querySelectorAll(".day-dot").forEach(x=>x.remove());
+  const nowPct=Math.max(0,Math.min(100,(nowMins/1440)*100));
+  document.getElementById("nowPin").style.left=(isToday?nowPct:0)+"%";
+  document.getElementById("nowPin").style.display=isToday?"block":"none";
+  document.getElementById("dayProgress").style.width=(isToday?nowPct:(selected<nowKey()?100:0))+"%";
+  tasks.forEach(t=>{
+    const d=document.createElement("span");
+    d.className="day-dot"+(data.checks[t.id]?" done":"");
+    const mm=MED_META[t.name]||{color:"#8a96aa"};
+    d.style.left=(t.mins/1440*100)+"%";
+    d.style.setProperty("--dotColor",mm.color);
+    d.title=t.label+" · "+t.name;
+    track.appendChild(d);
+  });
+  document.getElementById("timelineSummary").textContent=`${tasks.length} scheduled dose${tasks.length===1?"":"s"}`;
+
   document.getElementById("nextBanner").innerHTML=nt?
     `<div class="label">Next medication</div><div class="main">${nt.label} · ${nt.name}</div><div class="badges">${badgeHtml(nt.badges)}</div><div class="hint">Tap the checkbox below after giving the dose.</div>`:
     `<div class="label">Next medication</div><div class="main">✓ All scheduled medications complete</div><div class="hint">Nothing else is scheduled for this day.</div>`;
@@ -282,7 +350,7 @@ function render(){
         const chip=checked?'<span class="status-chip">✓ done</span>':flag?'<span class="status-chip">⚠ overdue</span>':'';
         row.innerHTML=`<input type="checkbox" ${checked?"checked":""}>
           <div class="time">${t.label}</div>
-          <div><div class="med">${t.name}</div><div class="badges">${badgeHtml(t.badges)}${chip}</div><div class="meta">${status}</div></div>`;
+          <div><div class="med">${t.name}</div><div class="badges">${medIdHtml(t.name)}${badgeHtml(t.badges)}${chip}</div><div class="meta">${status}</div></div>`;
         row.querySelector("input").onchange=()=>toggleMed(t.id);
         line.appendChild(row)
       });
