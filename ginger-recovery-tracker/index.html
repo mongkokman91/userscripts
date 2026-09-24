@@ -51,8 +51,13 @@ h1{font-size:21px;line-height:1.1;margin:0}
 }
 .nav #today{background:var(--soft);border-color:rgba(53,103,231,.35);color:var(--accent)}
 .date{font-size:15px;font-weight:850;margin:8px 1px}
+.day-status{display:grid;grid-template-columns:78px 1fr;gap:8px;margin-bottom:9px}
+.ring-card{border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);display:grid;place-items:center;padding:6px}
+.progress-ring{--pct:0;width:64px;height:64px;border-radius:50%;background:conic-gradient(var(--accent) calc(var(--pct)*1%),var(--line) 0);display:grid;place-items:center;position:relative}
+.progress-ring:after{content:"";position:absolute;width:48px;height:48px;border-radius:50%;background:var(--surface)}
+.progress-ring span{position:relative;z-index:1;font-size:13px;font-weight:950}
 .overview{
-  display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:9px
+  display:grid;grid-template-columns:repeat(3,1fr);gap:7px
 }
 .metric{
   padding:9px 8px;border:1px solid var(--line);border-radius:12px;background:var(--surface);box-shadow:var(--shadow);text-align:center
@@ -70,14 +75,15 @@ h1{font-size:21px;line-height:1.1;margin:0}
 .focus-time{font-size:28px;font-weight:950;letter-spacing:-.025em;margin:6px 0 1px}
 .focus-name{font-size:17px;font-weight:850}
 .focus-note{font-size:12px;color:#dbe3f7;margin-top:4px}
-.focus-actions{display:grid;grid-template-columns:1fr auto;gap:8px;margin-top:12px}
+.focus-actions{display:grid;grid-template-columns:1fr auto auto;gap:8px;margin-top:12px}
 .give-btn{
   min-height:48px;border:0;border-radius:12px;background:#fff;color:#172033;font-weight:950;font-size:15px;padding:0 14px
 }
 .give-btn[disabled]{opacity:.55;cursor:not-allowed}
-.jump-btn{
+.jump-btn,.focus-skip{
   min-width:48px;border:1px solid rgba(255,255,255,.25);border-radius:12px;background:rgba(255,255,255,.1);color:#fff;font-weight:900
 }
+.focus-skip{padding:0 11px;font-size:12px}
 .after{
   margin-top:8px;padding:9px 11px;border:1px solid var(--line);border-radius:12px;background:var(--surface);
   display:flex;justify-content:space-between;gap:12px;font-size:12px
@@ -98,6 +104,7 @@ h1{font-size:21px;line-height:1.1;margin:0}
   background:var(--med-color,#8792a5);box-shadow:0 0 0 1px rgba(0,0,0,.12);padding:0;z-index:2
 }
 .dose-dot.done:after{content:"✓";color:#fff;font-size:10px;font-weight:950;position:absolute;inset:0;display:grid;place-items:center}
+.dose-dot.skipped:after{content:"–";color:#fff;font-size:12px;font-weight:950;position:absolute;inset:0;display:grid;place-items:center}
 .dose-dot.overdue{box-shadow:0 0 0 3px rgba(189,61,45,.28)}
 .track-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:9px;margin-top:-2px}
 .section{margin-top:17px}
@@ -112,7 +119,13 @@ h1{font-size:21px;line-height:1.1;margin:0}
 }
 .row:before{content:"";position:absolute;left:-1px;top:13px;bottom:13px;width:4px;border-radius:3px;background:var(--med-color,#cfd6e1)}
 .row.overdue{background:var(--warn-bg);border-color:rgba(189,61,45,.35)}
+.row.status-done{opacity:.62;background:var(--surface2)}
+.row.status-skipped{opacity:.72;background:var(--surface2);border-style:dashed}
 .row input{width:28px;height:28px;accent-color:var(--med-color,var(--accent))}
+.row-actions{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
+.skip-btn{border:1px solid var(--line);background:var(--surface2);color:var(--muted);border-radius:8px;padding:4px 8px;font-size:10px;font-weight:850}
+.skip-btn.active{border-color:rgba(189,61,45,.35);color:var(--warn);background:var(--warn-bg)}
+
 .time{font-size:16px;font-weight:950}
 .time small{display:block;color:var(--muted);font-size:9px;font-weight:750;margin-top:1px}
 .med{font-weight:850}
@@ -162,7 +175,8 @@ textarea{width:100%;min-height:95px;padding:10px;border:1px solid var(--line);bo
   .share-btn{width:40px;height:40px;flex-basis:40px}
   .nav{gap:5px;margin:5px 0 7px}.nav button{min-height:38px;font-size:12px;padding:0 5px}
   .date{font-size:13px;margin:6px 1px}
-  .overview{gap:5px;margin-bottom:7px}.metric{padding:6px 4px;border-radius:10px}.metric b{font-size:14px}.metric span{font-size:9px}
+  .day-status{grid-template-columns:70px 1fr;gap:6px;margin-bottom:7px}.progress-ring{width:58px;height:58px}.progress-ring:after{width:44px;height:44px}
+  .overview{gap:5px}.metric{padding:6px 4px;border-radius:10px}.metric b{font-size:14px}.metric span{font-size:9px}
   .focus{padding:12px;border-radius:15px}.focus-time{font-size:23px}.focus-name{font-size:15px}.focus-note{font-size:11px}
   .focus-actions{margin-top:9px}.give-btn{min-height:44px}.after{margin-top:6px;padding:8px 9px}
   .dayline{margin-top:7px;padding:8px 9px 6px}
@@ -193,10 +207,13 @@ textarea{width:100%;min-height:95px;padding:10px;border:1px solid var(--line);bo
 
 <div class="date" id="dateLabel"></div>
 
-<div class="overview">
-  <div class="metric"><b id="medMetric">0</b><span>Meds left</span></div>
-  <div class="metric"><b id="careMetric">0</b><span>Care left</span></div>
-  <div class="metric"><b id="vetMetric">—</b><span>Next vet</span></div>
+<div class="day-status">
+  <div class="ring-card"><div class="progress-ring" id="progressRing"><span id="ringText">0%</span></div></div>
+  <div class="overview">
+    <div class="metric"><b id="medMetric">0</b><span>Meds left</span></div>
+    <div class="metric"><b id="careMetric">0</b><span>Care left</span></div>
+    <div class="metric"><b id="vetMetric">—</b><span>Next vet</span></div>
+  </div>
 </div>
 
 <div class="focus" id="focusCard"></div>
@@ -236,7 +253,7 @@ textarea{width:100%;min-height:95px;padding:10px;border:1px solid var(--line);bo
   <summary>⚙️ More</summary>
   <div class="panel-body">
     <button class="danger-btn" id="reset">Reset this day</button>
-    <div class="install-tip" id="installTip">The public link is shareable. Progress is stored separately on each device/browser.</div>
+    <div class="install-tip" id="installTip">Shared cloud sync is on. Changes update across devices using this tracker.</div>
   </div>
 </details>
 </div>
@@ -281,24 +298,24 @@ function parseKey(k){const p=k.split("-").map(Number);return new Date(p[0],p[1]-
 function addDays(k,n){const d=parseKey(k);d.setDate(d.getDate()+n);return key(d)}
 function formatDate(k){return parseKey(k).toLocaleDateString(undefined,{weekday:"long",year:"numeric",month:"long",day:"numeric"})}
 function nowKey(){return key(new Date())}
-function load(k){try{const x=JSON.parse(localStorage.getItem("ginger:"+k)||"{}");return {checks:x.checks||{},notes:x.notes||"",givenAt:x.givenAt||{}}}catch(e){return {checks:{},notes:"",givenAt:{}}}}
+function load(k){try{const x=JSON.parse(localStorage.getItem("ginger:"+k)||"{}");return {checks:x.checks||{},notes:x.notes||"",givenAt:x.givenAt||{},skipped:x.skipped||{}}}catch(e){return {checks:{},notes:"",givenAt:{},skipped:{}}}}
 function save(k,d){localStorage.setItem("ginger:"+k,JSON.stringify(d));syncToCloud(k,d)}
 async function syncToCloud(k,d){
   try{
-    await cloud.from("ginger_state").upsert({day:k,checks:d.checks||{},notes:d.notes||"",given_at:d.givenAt||{},updated_at:new Date().toISOString()},{onConflict:"day"});
+    await cloud.from("ginger_state").upsert({day:k,checks:d.checks||{},notes:d.notes||"",given_at:d.givenAt||{},skipped:d.skipped||{},updated_at:new Date().toISOString()},{onConflict:"day"});
   }catch(e){}
 }
 async function loadCloud(k){
   try{
-    const {data:row,error}=await cloud.from("ginger_state").select("checks,notes,given_at").eq("day",k).maybeSingle();
+    const {data:row,error}=await cloud.from("ginger_state").select("checks,notes,given_at,skipped").eq("day",k).maybeSingle();
     if(error)return;
     if(row){
-      data={checks:row.checks||{},notes:row.notes||"",givenAt:row.given_at||{}};
+      data={checks:row.checks||{},notes:row.notes||"",givenAt:row.given_at||{},skipped:row.skipped||{}};
       localStorage.setItem("ginger:"+k,JSON.stringify(data));
       render();
     }else{
       const local=load(k);
-      if(Object.keys(local.checks||{}).length||local.notes||Object.keys(local.givenAt||{}).length)await syncToCloud(k,local);
+      if(Object.keys(local.checks||{}).length||local.notes||Object.keys(local.givenAt||{}).length||Object.keys(local.skipped||{}).length)await syncToCloud(k,local);
     }
   }catch(e){}
 }
@@ -307,7 +324,7 @@ function subscribeCloud(){
   channel=cloud.channel("ginger-shared-state")
     .on("postgres_changes",{event:"*",schema:"public",table:"ginger_state"},payload=>{
       if(payload.new&&payload.new.day===selected){
-        data={checks:payload.new.checks||{},notes:payload.new.notes||"",givenAt:payload.new.given_at||{}};
+        data={checks:payload.new.checks||{},notes:payload.new.notes||"",givenAt:payload.new.given_at||{},skipped:payload.new.skipped||{}};
         localStorage.setItem("ginger:"+selected,JSON.stringify(data));
         render();
       }
@@ -339,12 +356,19 @@ let selected=nowKey(),data=load(selected),lastAction=null,snackTimer=null,channe
 
 function markGiven(id,showUndo=true){
   if(data.checks[id])return;
+  delete data.skipped[id];
   data.checks[id]=true;data.givenAt[id]=new Date().toISOString();save(selected,data);
   lastAction={day:selected,id:id};
   render();
   if(showUndo)showSnack("Marked given");
 }
-function unmark(id){data.checks[id]=false;delete data.givenAt[id];save(selected,data);render()}
+function unmark(id){data.checks[id]=false;delete data.givenAt[id];delete data.skipped[id];save(selected,data);render()}
+function markSkipped(id){
+  if(!confirm("Record this dose as skipped/held? This only records what happened; it does not mean the prescription is optional."))return;
+  data.checks[id]=false;delete data.givenAt[id];
+  data.skipped[id]={at:new Date().toISOString(),label:"Skipped / held"};
+  save(selected,data);render();showSnack("Marked skipped / held");
+}
 function toggleMed(id){data.checks[id]?unmark(id):markGiven(id)}
 function toggleCare(i){const id="care-"+i;data.checks[id]=!data.checks[id];save(selected,data);render()}
 function showSnack(msg){
@@ -362,18 +386,23 @@ function render(){
   const today=nowKey(),isToday=selected===today,now=new Date(),nowMins=now.getHours()*60+now.getMinutes(),tasks=tasksFor(selected);
   document.getElementById("dateLabel").textContent=formatDate(selected)+(isToday?" · Today":"");
 
-  const incomplete=tasks.filter(t=>!data.checks[t.id]).sort((a,b)=>a.mins-b.mins);
-  const completed=tasks.filter(t=>data.checks[t.id]).sort((a,b)=>a.mins-b.mins);
-  const medLeft=incomplete.length;
+  const unresolved=tasks.filter(t=>!data.checks[t.id]&&!data.skipped[t.id]).sort((a,b)=>a.mins-b.mins);
+  const medLeft=unresolved.length;
   const careLeft=CARE.filter((_,i)=>!data.checks["care-"+i]).length;
+  const medHandled=tasks.length-medLeft;
+  const careDone=CARE.length-careLeft;
+  const totalItems=tasks.length+CARE.length,handled=medHandled+careDone;
+  const pct=totalItems?Math.round(handled/totalItems*100):0;
+  document.getElementById("ringText").textContent=pct+"%";
+  document.getElementById("progressRing").style.setProperty("--pct",pct);
   document.getElementById("medMetric").textContent=medLeft;
   document.getElementById("careMetric").textContent=careLeft;
   const vet=new Date(2026,9,6),base=parseKey(selected),days=Math.ceil((vet-base)/(1000*60*60*24));
   document.getElementById("vetMetric").textContent=days>0?days+"d":days===0?"Today":"—";
 
-  const overdue=isToday?incomplete.filter(t=>t.mins<nowMins):[];
+  const overdue=isToday?unresolved.filter(t=>t.mins<nowMins):[];
   const overdueFocus=overdue.length?overdue[overdue.length-1]:null;
-  const nextFuture=isToday?(incomplete.find(t=>t.mins>=nowMins)||null):(incomplete[0]||null);
+  const nextFuture=isToday?(unresolved.find(t=>t.mins>=nowMins)||null):(unresolved[0]||null);
   const focus=overdueFocus||nextFuture;
   const focusEl=document.getElementById("focusCard");
   const afterEl=document.getElementById("afterCard");
@@ -394,12 +423,14 @@ function render(){
       '<div class="focus-note">'+(isOver?"This scheduled dose has not been marked given.":"Next incomplete scheduled dose.")+'</div>'+
       '<div class="focus-actions">'+
         '<button class="give-btn" id="focusGive" '+(!isToday&&selected>today?"disabled":"")+'>'+(!isToday&&selected>today?"FUTURE DOSE":"MARK GIVEN")+'</button>'+
+        '<button class="focus-skip" id="focusSkip" '+(!isToday&&selected>today?"disabled":"")+'>SKIP / HOLD</button>'+
         '<button class="jump-btn" id="focusJump" aria-label="Jump to this dose">↓</button>'+
       '</div>';
     document.getElementById("focusGive").onclick=()=>markGiven(focus.id);
+    document.getElementById("focusSkip").onclick=()=>markSkipped(focus.id);
     document.getElementById("focusJump").onclick=()=>jumpTo(focus.id);
 
-    const rest=incomplete.filter(t=>t.id!==focus.id);
+    const rest=unresolved.filter(t=>t.id!==focus.id);
     const after=rest.find(t=>isToday?t.mins>=Math.max(nowMins,focus.mins):true)||rest[0]||null;
     if(after){
       const txt=isToday&&after.mins>=nowMins?relTime(after.mins-nowMins):"";
@@ -416,46 +447,36 @@ function render(){
   document.getElementById("trackProgress").style.width=(isToday?nowPct:(selected<today?100:0))+"%";
   tasks.forEach(t=>{
     const b=document.createElement("button"),mm=medMeta(t.name);
-    b.className="dose-dot"+(data.checks[t.id]?" done":"")+(isToday&&!data.checks[t.id]&&t.mins<nowMins?" overdue":"");
+    b.className="dose-dot"+(data.checks[t.id]?" done":"")+(data.skipped[t.id]?" skipped":"")+(isToday&&!data.checks[t.id]&&!data.skipped[t.id]&&t.mins<nowMins?" overdue":"");
     b.style.left=(t.mins/1440*100)+"%";b.style.setProperty("--med-color",mm.color);
     b.title=t.label+" · "+t.name;b.setAttribute("aria-label",t.label+" "+t.name);b.onclick=()=>jumpTo(t.id);track.appendChild(b);
   });
   document.getElementById("timelineSummary").textContent=tasks.length+" doses";
 
   const sec=document.getElementById("medSection");
-  sec.innerHTML='<div class="section-title"><span class="section-icon">💊</span>Needs doing</div>';
-  if(!incomplete.length)sec.innerHTML+='<div class="after"><b>✓ No medications left</b><span>All scheduled doses complete</span></div>';
-  const overdueIds=new Set(overdue.map(t=>t.id));
+  sec.innerHTML='<div class="section-title"><span class="section-icon">💊</span>Medication schedule</div>';
   const renderGroup=(title,list)=>{
     if(!list.length)return;
     const g=document.createElement("div");g.className="group";
     const gm=GROUP_META[title]||{icon:"•",color:"#8893a4"};
     g.innerHTML='<div class="group-title" style="--group-color:'+gm.color+'"><span class="group-dot"></span><span>'+gm.icon+'</span><span>'+title+'</span></div>';
     list.sort((a,b)=>a.mins-b.mins).forEach(t=>{
-      const mm=medMeta(t.name),r=document.createElement("label");
-      const isOver=isToday&&t.mins<nowMins;
-      r.className="row"+(isOver?" overdue":"");r.dataset.doseId=t.id;r.style.setProperty("--med-color",mm.color);
-      const countdown=isToday&&!isOver?" · "+relTime(t.mins-nowMins):isOver?" · overdue":"";
-      r.innerHTML='<input type="checkbox"><div class="time">'+t.label+(boundaryLabel(t)?'<small>'+boundaryLabel(t)+'</small>':'')+'</div><div><div class="med">'+t.name+'</div><div class="tags">'+badgeHtml(t)+'</div><div class="meta">'+t.note+countdown+'</div></div>';
-      r.querySelector("input").onchange=()=>markGiven(t.id);g.appendChild(r);
+      const mm=medMeta(t.name),r=document.createElement("div");
+      const given=!!data.checks[t.id],skipped=!!data.skipped[t.id],isOver=isToday&&!given&&!skipped&&t.mins<nowMins;
+      r.className="row"+(isOver?" overdue":"")+(given?" status-done":"")+(skipped?" status-skipped":"");
+      r.dataset.doseId=t.id;r.style.setProperty("--med-color",mm.color);
+      let status=t.note;
+      if(given)status=data.givenAt[t.id]?"Given "+fmtGiven(data.givenAt[t.id]):"Given";
+      else if(skipped)status="Skipped / held"+(data.skipped[t.id].at?" "+fmtGiven(data.skipped[t.id].at):"");
+      else if(isToday)status+=isOver?" · overdue":" · "+relTime(t.mins-nowMins);
+      r.innerHTML='<input type="checkbox" '+(given?"checked":"")+' aria-label="Mark '+t.name+' '+t.label+' given"><div class="time">'+t.label+(boundaryLabel(t)?'<small>'+boundaryLabel(t)+'</small>':'')+'</div><div><div class="med">'+t.name+'</div><div class="tags">'+badgeHtml(t)+(given?'<span class="tag">✓ GIVEN</span>':skipped?'<span class="tag warn">– SKIPPED</span>':'')+'</div><div class="meta">'+status+'</div><div class="row-actions"><button class="skip-btn '+(skipped?"active":"")+'" type="button">'+(skipped?"UNDO SKIP":"SKIP / HOLD")+'</button></div></div>';
+      r.querySelector('input').onchange=()=>given?unmark(t.id):markGiven(t.id);
+      r.querySelector('.skip-btn').onclick=()=>skipped?unmark(t.id):markSkipped(t.id);
+      g.appendChild(r);
     });
     sec.appendChild(g);
   };
-  renderGroup("OVERDUE / NOW",overdue);
-  ["MORNING","AFTERNOON","EVENING","OVERNIGHT"].forEach(gr=>renderGroup(gr,incomplete.filter(t=>groupFor(t.mins)===gr&&!overdueIds.has(t.id))));
-
-  if(completed.length){
-    const box=document.createElement("details");box.className="panel completed-box";
-    box.innerHTML='<summary>✓ '+completed.length+' completed medication'+(completed.length===1?"":"s")+'</summary><div class="panel-body completed-list"></div>';
-    const list=box.querySelector(".completed-list");
-    completed.forEach(t=>{
-      const mm=medMeta(t.name),r=document.createElement("label");r.className="row";r.dataset.doseId=t.id;r.style.setProperty("--med-color",mm.color);
-      const given=data.givenAt[t.id]?"Given "+fmtGiven(data.givenAt[t.id]):"Completed";
-      r.innerHTML='<input type="checkbox" checked><div class="time">'+t.label+(boundaryLabel(t)?'<small>'+boundaryLabel(t)+'</small>':'')+'</div><div><div class="med">'+t.name+'</div><div class="tags">'+badgeHtml(t)+'</div><div class="meta">'+given+'</div></div>';
-      r.querySelector("input").onchange=()=>unmark(t.id);list.appendChild(r);
-    });
-    sec.appendChild(box);
-  }
+  ["MORNING","AFTERNOON","EVENING","OVERNIGHT"].forEach(gr=>renderGroup(gr,tasks.filter(t=>groupFor(t.mins)===gr)));
 
   const care=document.getElementById("careSection");care.innerHTML="";
   ["Morning","Anytime","Evening"].forEach(group=>{
@@ -477,7 +498,7 @@ document.getElementById("prev").onclick=()=>setDay(addDays(selected,-1));
 document.getElementById("today").onclick=()=>setDay(nowKey());
 document.getElementById("nextDay").onclick=()=>setDay(addDays(selected,1));
 document.getElementById("notes").oninput=e=>{data.notes=e.target.value;save(selected,data)};
-document.getElementById("reset").onclick=()=>{if(confirm("Reset all checkboxes, notes, and completion times for "+formatDate(selected)+"?")){data={checks:{},notes:"",givenAt:{}};save(selected,data);render()}};
+document.getElementById("reset").onclick=()=>{if(confirm("Reset all medication/care statuses, notes, and times for "+formatDate(selected)+"?")){data={checks:{},notes:"",givenAt:{},skipped:{}};save(selected,data);render()}};
 document.getElementById("shareBtn").onclick=async()=>{
   const shareData={title:"Ginger Recovery Tracker",text:"Ginger recovery and medication tracker",url:location.href.split("?")[0]};
   try{
