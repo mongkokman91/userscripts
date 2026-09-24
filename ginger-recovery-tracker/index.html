@@ -35,7 +35,9 @@ button,input,textarea,summary{font:inherit}
 button{cursor:pointer}
 button:focus-visible,input:focus-visible,textarea:focus-visible,summary:focus-visible{outline:3px solid rgba(53,103,231,.3);outline-offset:2px}
 .wrap{max-width:760px;margin:0 auto;padding:12px}
-header{display:flex;align-items:center;gap:11px;padding:8px 2px 6px}
+header{display:flex;align-items:center;gap:10px;padding:6px 2px 5px}
+.header-main{display:flex;align-items:center;gap:10px;min-width:0;flex:1}
+.share-btn{width:42px;height:42px;flex:0 0 42px;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);display:grid;place-items:center;font-size:18px}
 .logo{
   width:48px;height:48px;border-radius:14px;display:grid;place-items:center;font-size:25px;
   background:linear-gradient(145deg,#f0d4a1,#dda95f);box-shadow:var(--shadow)
@@ -152,16 +154,34 @@ textarea{width:100%;min-height:95px;padding:10px;border:1px solid var(--line);bo
 .snackbar.show{transform:translateX(-50%) translateY(0)}
 .snackbar button{border:0;background:#fff;color:#172033;border-radius:9px;padding:7px 10px;font-weight:900}
 @media(max-width:560px){
-  .wrap{padding:9px}.overview{gap:5px}.metric{padding:8px 5px}.metric b{font-size:15px}
-  .row{grid-template-columns:auto 62px 1fr;padding:9px 8px}.care-grid{grid-template-columns:1fr}.nav button{font-size:13px}
+  .wrap{padding:7px 8px 14px}
+  header{padding:3px 1px 4px}
+  .logo{width:40px;height:40px;border-radius:12px;font-size:22px}
+  h1{font-size:18px}.subtitle{font-size:11px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .share-btn{width:40px;height:40px;flex-basis:40px}
+  .nav{gap:5px;margin:5px 0 7px}.nav button{min-height:38px;font-size:12px;padding:0 5px}
+  .date{font-size:13px;margin:6px 1px}
+  .overview{gap:5px;margin-bottom:7px}.metric{padding:6px 4px;border-radius:10px}.metric b{font-size:14px}.metric span{font-size:9px}
+  .focus{padding:12px;border-radius:15px}.focus-time{font-size:23px}.focus-name{font-size:15px}.focus-note{font-size:11px}
+  .focus-actions{margin-top:9px}.give-btn{min-height:44px}.after{margin-top:6px;padding:8px 9px}
+  .dayline{margin-top:7px;padding:8px 9px 6px}
+  .section{margin-top:13px}.section-title{font-size:13px;margin-bottom:6px}
+  .group{margin-top:9px}.group-title{margin:6px 2px}
+  .row{grid-template-columns:auto 58px 1fr;gap:7px;min-height:58px;padding:8px 7px;margin:5px 0;border-radius:12px}
+  .row input{width:25px;height:25px}.time{font-size:14px}.med{font-size:14px}.meta{font-size:10px}.tags{margin-top:4px}
+  .care-grid{grid-template-columns:1fr}.care-group{margin-top:8px}.care-item{min-height:49px;padding:8px 9px}
+  details.panel{margin-top:9px}details.panel summary{padding:10px 11px}
 }
 </style>
 </head>
 <body>
 <div class="wrap">
 <header>
-  <div class="logo">🐶</div>
-  <div><h1>Ginger Recovery Tracker</h1><div class="subtitle">Today-first medication & recovery view</div></div>
+  <div class="header-main">
+    <div class="logo">🐶</div>
+    <div><h1>Ginger Recovery Tracker</h1><div class="subtitle">Today-first medication & recovery view</div></div>
+  </div>
+  <button class="share-btn" id="shareBtn" aria-label="Share tracker" title="Share tracker">↗</button>
 </header>
 
 <div class="nav">
@@ -215,7 +235,7 @@ textarea{width:100%;min-height:95px;padding:10px;border:1px solid var(--line);bo
   <summary>⚙️ More</summary>
   <div class="panel-body">
     <button class="danger-btn" id="reset">Reset this day</button>
-    <div class="install-tip" id="installTip">Progress is stored locally on this device.</div>
+    <div class="install-tip" id="installTip">The public link is shareable. Progress is stored separately on each device/browser.</div>
   </div>
 </details>
 </div>
@@ -424,6 +444,16 @@ document.getElementById("today").onclick=()=>setDay(nowKey());
 document.getElementById("nextDay").onclick=()=>setDay(addDays(selected,1));
 document.getElementById("notes").oninput=e=>{data.notes=e.target.value;save(selected,data)};
 document.getElementById("reset").onclick=()=>{if(confirm("Reset all checkboxes, notes, and completion times for "+formatDate(selected)+"?")){data={checks:{},notes:"",givenAt:{}};save(selected,data);render()}};
+document.getElementById("shareBtn").onclick=async()=>{
+  const shareData={title:"Ginger Recovery Tracker",text:"Ginger recovery and medication tracker",url:location.href.split("?")[0]};
+  try{
+    if(navigator.share)await navigator.share(shareData);
+    else{
+      await navigator.clipboard.writeText(shareData.url);
+      showSnack("Link copied");
+    }
+  }catch(e){}
+};
 document.getElementById("undoBtn").onclick=()=>{
   if(lastAction&&lastAction.day===selected){unmark(lastAction.id);document.getElementById("snackbar").classList.remove("show");lastAction=null}
 };
