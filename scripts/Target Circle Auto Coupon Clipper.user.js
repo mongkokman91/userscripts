@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Target Circle Auto Coupon Clipper
 // @namespace    https://greasyfork.org/
-// @version      3.5.0
+// @version      3.6.0
 // @homepageURL  https://github.com/mongkokman91/userscripts/blob/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @updateURL    https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
 // @downloadURL  https://raw.githubusercontent.com/mongkokman91/userscripts/main/scripts/Target%20Circle%20Auto%20Coupon%20Clipper.user.js
@@ -35,11 +35,11 @@
   panel.append(status, start, stop);
   document.body.append(panel);
   let stopped = false, running = false, saved = 0, loads = 0;
-  let attempted = new WeakSet();
+  let attempted = new Set();
   let unconfirmed = 0;
   const BATCH_SIZE = 5, CLICK_GAP_MS = 200;
   const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
-  const say = message => { status.textContent = 'TC Clipper v3.5.0: ' + message; };
+  const say = message => { status.textContent = 'TC Clipper v3.6.0: ' + message; };
   const labels = el => [el.innerText || el.textContent || el.value || '', el.getAttribute('aria-label') || '', el.title || '']
     .map(s => s.replace(/\s+/g, ' ').trim());
   const matches = (el, re) => labels(el).some(s => re.test(s));
@@ -51,10 +51,26 @@
   const applyRE = /^apply(?:\s+(?:offer|coupon|deal))?$/i;
   const moreRE = /^load more(?:\s+(?:offers|coupons|deals))?$/i;
   const doneRE = /^(?:[✓✔]\s*)?applied\b/i;
-  const findApply = () => controls().find(el => enabled(el) && !attempted.has(el) &&
-    matches(el, applyRE) && !matches(el, doneRE));
+  const cardFor = el => el.closest('[data-test="offer-card"]');
+  const offerKey = el => {
+    const card = cardFor(el);
+    if (!card) return null;
+    const title = card.querySelector('[data-test="offer-title"]')?.textContent?.trim();
+    const image = card.querySelector('img')?.getAttribute('src')?.split('?')[0] || '';
+    const detail = card.querySelector('p')?.textContent?.trim() || '';
+    return title ? [title, image, detail].join('|') : null;
+  };
+  const findApply = () => controls().find(el => enabled(el) && offerKey(el) &&
+    !attempted.has(offerKey(el)) && matches(el, applyRE) && !matches(el, doneRE));
+  const confirmedOffer = item => {
+    if (item.button.isConnected && matches(item.button, doneRE)) return true;
+    return [...document.querySelectorAll('[data-test="offer-card"]')].some(card => {
+      const button = [...card.querySelectorAll('button')].find(b => matches(b, doneRE));
+      return button && offerKey(button) === item.key;
+    });
+  };
   const findMore = () => controls().find(el => matches(el, moreRE));
-  const onDeals = () => /^\/(?:deals|circle)(?:\/|$)/.test(location.pathname);
+  const onDeals = () => /^\/(?:deals|circle)(?:\/|$)/.test(location.pathname) || /^\/c\/top-deals(?:\/|$)/.test(location.pathname);
   const fingerprint = () => controls().filter(el => matches(el, applyRE) || matches(el, doneRE))
     .map(el => (el.parentElement?.textContent || labels(el)[0]).replace(/\s+/g, ' ')).join('|');
 
@@ -64,11 +80,11 @@
     if (running) return;
     if (!onDeals()) { say('Open Target Deals, then click Clip all.'); return; }
     stopped = false;
-    attempted = new WeakSet();
+    attempted = new Set();
     saved = 0; loads = 0; unconfirmed = 0;
     running = true;
     start.disabled = true; stop.disabled = false;
-    let idle = 0;
+    let idle = 0, failedBatches = 0;
     try {
       for (let actions = 0; actions < 1000 && !stopped && onDeals(); actions++) {
         if (findApply()) {
@@ -77,34 +93,37 @@
           for (let n = 0; n < BATCH_SIZE && !stopped && onDeals(); n++) {
             const button = findApply(); // Re-query after every click: React may replace nodes.
             if (!button) break;
-            attempted.add(button);
+            const key = offerKey(button);
+            attempted.add(key);
             button.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'instant' });
             if (!enabled(button) || !button.isConnected || matches(button, doneRE)) continue;
             button.click();
-            pending.push(button);
+            pending.push({ button, key });
             say('Applying batch… ' + saved + ' confirmed');
             await sleep(CLICK_GAP_MS);
           }
           const confirmed = new Set();
           for (let n = 0; n < 24; n++) {
-            for (const button of pending) {
-              if (button.isConnected && matches(button, doneRE)) confirmed.add(button);
+            for (const item of pending) {
+              if (confirmedOffer(item)) confirmed.add(item.key);
             }
             if (confirmed.size === pending.length || stopped || !onDeals()) break;
             await sleep(250);
           }
           saved += confirmed.size;
           unconfirmed += pending.length - confirmed.size;
-          if (confirmed.size < pending.length) {
-            say(saved + ' confirmed; ' + unconfirmed + ' unconfirmed. Paused to avoid repeating uncertain saves. Click Clip all to rescan.');
+          failedBatches = confirmed.size === 0 ? failedBatches + 1 : 0;
+          if (failedBatches >= 2) {
+            say(saved + ' confirmed; ' + unconfirmed + ' unconfirmed. Paused after repeated failures; check Target and rescan.');
             return;
           }
+          if (unconfirmed) say(saved + ' confirmed; ' + unconfirmed + ' unconfirmed. Continuing with other offers.');
           continue;
         }
         const more = findMore();
         if (!more) {
           if (++idle < 5) { say('Waiting for any remaining offers…'); await sleep(1000); continue; }
-          say('Finished — ' + saved + ' confirmed applied; ' + loads + ' batches loaded.');
+          say('Finished — ' + saved + ' confirmed applied; ' + unconfirmed + ' unconfirmed; ' + loads + ' batches loaded.');
           return;
         }
         if (!enabled(more)) {
